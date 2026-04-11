@@ -1,16 +1,24 @@
 #!/bin/bash
 #
-# vm-up.sh — clone the macOS Tahoe Xcode base image into a working
-# VM, start it headless with the repo mounted as a virtio-fs share,
+# vm-up.sh — clone a macOS Tahoe base image into a working VM,
+# start it headless with the repo mounted as a virtio-fs share,
 # and wait for the Tart guest agent to come up so subsequent
 # `tart exec` calls work.
 #
 # Usage:   scripts/vm-up.sh [vm-name]
 # Default: steading-test
 #
-# The base image (ghcr.io/cirruslabs/macos-tahoe-xcode:26.4) must
-# already be pulled — run `TART_HOME=… tart pull …` once before
-# this script.
+# Environment:
+#   BASE_IMAGE — OCI ref of the base image to clone from.
+#                Defaults to ghcr.io/cirruslabs/macos-tahoe-xcode:26.4
+#                (full Xcode toolchain preinstalled — the everyday
+#                dev / build-test VM).
+#                Set to ghcr.io/cirruslabs/macos-tahoe-vanilla:26.4
+#                for the release-test VM with no developer tools —
+#                matches a real end-user machine.
+#
+# The base image must already be pulled with
+# `TART_HOME=… tart pull …` before this script.
 #
 # The host's repo root is mounted read-only inside the VM at
 # /Volumes/My Shared Files/Steading — the guest can build from a
@@ -22,11 +30,12 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export TART_HOME="${TART_HOME:-$REPO_ROOT/tart}"
 
 VM_NAME="${1:-steading-test}"
-BASE_IMAGE="ghcr.io/cirruslabs/macos-tahoe-xcode:26.4"
+BASE_IMAGE="${BASE_IMAGE:-ghcr.io/cirruslabs/macos-tahoe-xcode:26.4}"
 
-echo "TART_HOME=$TART_HOME"
-echo "repo root=$REPO_ROOT"
-echo "vm name  =$VM_NAME"
+echo "TART_HOME =$TART_HOME"
+echo "repo root =$REPO_ROOT"
+echo "vm name   =$VM_NAME"
+echo "base image=$BASE_IMAGE"
 
 # Clone if the working VM doesn't already exist. Tart stores each
 # local VM at $TART_HOME/vms/<name>/ so a directory probe is more
