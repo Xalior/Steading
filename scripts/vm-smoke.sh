@@ -21,7 +21,7 @@ export TART_HOME="${TART_HOME:-$REPO_ROOT/tart}"
 VM_NAME="${1:-steading-test}"
 
 # Sanity: the VM must be up and the guest agent reachable.
-if ! tart exec "$VM_NAME" -- /usr/bin/true >/dev/null 2>&1; then
+if ! tart exec "$VM_NAME" /usr/bin/true >/dev/null 2>&1; then
     echo "vm ${VM_NAME} is not running or guest agent is not responding" >&2
     echo "run scripts/vm-up.sh ${VM_NAME} first" >&2
     exit 1
@@ -30,7 +30,7 @@ fi
 echo "==> copying repo into VM (~/build)"
 # Copy the shared mount to a writable location so DerivedData and
 # anything xcodebuild scribbles stays in the guest.
-tart exec "$VM_NAME" -- /bin/bash -lc '
+tart exec "$VM_NAME" /bin/bash -lc '
     set -euo pipefail
     rm -rf ~/build
     mkdir -p ~/build
@@ -39,7 +39,7 @@ tart exec "$VM_NAME" -- /bin/bash -lc '
 '
 
 echo "==> regenerating xcodeproj (xcodegen)"
-tart exec "$VM_NAME" -- /bin/bash -lc '
+tart exec "$VM_NAME" /bin/bash -lc '
     set -euo pipefail
     cd ~/build
     if ! command -v xcodegen >/dev/null 2>&1; then
@@ -49,7 +49,7 @@ tart exec "$VM_NAME" -- /bin/bash -lc '
 '
 
 echo "==> xcodebuild build (ad-hoc signed)"
-tart exec "$VM_NAME" -- /bin/bash -lc '
+tart exec "$VM_NAME" /bin/bash -lc '
     set -euo pipefail
     cd ~/build
     xcodebuild \
@@ -66,7 +66,7 @@ tart exec "$VM_NAME" -- /bin/bash -lc '
 '
 
 echo "==> xcodebuild test"
-tart exec "$VM_NAME" -- /bin/bash -lc '
+tart exec "$VM_NAME" /bin/bash -lc '
     set -euo pipefail
     cd ~/build
     xcodebuild \

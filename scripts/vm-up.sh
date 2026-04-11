@@ -63,10 +63,12 @@ else
     disown
 fi
 
-# Wait up to ~120s for the guest agent to respond.
+# Wait up to ~120s for the guest agent to respond. Note that
+# `tart exec` does NOT take a `--` separator — the command and
+# its args follow the VM name directly.
 echo -n "waiting for guest agent"
 for _ in $(seq 1 60); do
-    if tart exec "$VM_NAME" -- /usr/bin/true >/dev/null 2>&1; then
+    if tart exec "$VM_NAME" /usr/bin/true >/dev/null 2>&1; then
         echo
         IP="$(tart ip "$VM_NAME" 2>/dev/null || echo '?')"
         echo "vm ${VM_NAME} is ready (ip=${IP})"
