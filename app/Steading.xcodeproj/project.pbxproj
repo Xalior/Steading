@@ -31,7 +31,9 @@
 		B6922DDBE8E384BB1C266E7C /* PrivHelperAllowlistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */; };
 		BF5BEB980CBCF5EF87BE9855 /* PrivHelperClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D91110641303655AF49F7B /* PrivHelperClient.swift */; };
 		C03D42EA4DA31CDF685D457F /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E9A1CB32DC5FC5DBF3CB877 /* main.swift */; };
+		C11D86FFA26BB72DE065191C /* AppStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81F9C7A2DBF73EDA4A98A518 /* AppStateTests.swift */; };
 		CADFD3BED81464CA0D745B1C /* BuiltInServiceRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE01FD58CA5CED026DC5AF1 /* BuiltInServiceRegistry.swift */; };
+		E7AAF54B7B276501030AC2EC /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A92531C471AFC497B95E816 /* OnboardingView.swift */; };
 		E89CE1926409C2113DE7F06C /* ServiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */; };
 		EB2C97840B93FBF7A5F4A358 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 455044AAFD76888EB755F58A /* SidebarView.swift */; };
 		ED95596C683C948EEC206B68 /* SteadingPrivHelper in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = E0ADD5FDB11E296C53AA5C23 /* SteadingPrivHelper */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -97,10 +99,12 @@
 		67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRunnerTests.swift; sourceTree = "<group>"; };
 		7707938979911C8523D73059 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7C68F7A05734954EA423C2B6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		81F9C7A2DBF73EDA4A98A518 /* AppStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTests.swift; sourceTree = "<group>"; };
 		8E9A1CB32DC5FC5DBF3CB877 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		95C7A751F5DDA87B5F0E5F2F /* SteadingPrivHelperProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteadingPrivHelperProtocol.swift; sourceTree = "<group>"; };
 		96B0EE6A70B228F7CB0D472F /* BrewDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewDetector.swift; sourceTree = "<group>"; };
 		992A0F7706B92B084A1BDBF7 /* BuiltInCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInCatalog.swift; sourceTree = "<group>"; };
+		9A92531C471AFC497B95E816 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		9AA1D53A34F5A36CDB3D4188 /* PrivHelperListenerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperListenerDelegate.swift; sourceTree = "<group>"; };
 		A6CBE520AEE4A16C62B7F389 /* MenuBarContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarContent.swift; sourceTree = "<group>"; };
 		A6E4C4D985048F9CF0B1285C /* com.xalior.Steading.privhelper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = com.xalior.Steading.privhelper.plist; sourceTree = "<group>"; };
@@ -169,6 +173,7 @@
 				F2DB46FC31752B14A6A9B387 /* CatalogDetailView.swift */,
 				7707938979911C8523D73059 /* ContentView.swift */,
 				A6CBE520AEE4A16C62B7F389 /* MenuBarContent.swift */,
+				9A92531C471AFC497B95E816 /* OnboardingView.swift */,
 				455044AAFD76888EB755F58A /* SidebarView.swift */,
 				CE58958345FEE2847E8E57AE /* WelcomeView.swift */,
 			);
@@ -178,6 +183,7 @@
 		99F19EC6C2B3066D9A7BF262 /* SteadingTests */ = {
 			isa = PBXGroup;
 			children = (
+				81F9C7A2DBF73EDA4A98A518 /* AppStateTests.swift */,
 				1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */,
 				67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */,
 				DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */,
@@ -369,6 +375,7 @@
 				129B589725293E7C791250B6 /* CatalogItem.swift in Sources */,
 				1C4F0835A7C272784210CBF2 /* ContentView.swift in Sources */,
 				948E99504645C1D7F2CBCC54 /* MenuBarContent.swift in Sources */,
+				E7AAF54B7B276501030AC2EC /* OnboardingView.swift in Sources */,
 				6DAE7C151728E1ECFB995D83 /* PrivHelperAllowlist.swift in Sources */,
 				BF5BEB980CBCF5EF87BE9855 /* PrivHelperClient.swift in Sources */,
 				9D406F49ADA6A79196E73DF8 /* ProcessRunner.swift in Sources */,
@@ -397,6 +404,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C11D86FFA26BB72DE065191C /* AppStateTests.swift in Sources */,
 				A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */,
 				04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */,
 				B6922DDBE8E384BB1C266E7C /* PrivHelperAllowlistTests.swift in Sources */,

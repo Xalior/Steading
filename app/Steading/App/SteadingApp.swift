@@ -7,12 +7,19 @@ struct SteadingApp: App {
 
     var body: some Scene {
         Window("Steading", id: "main") {
-            ContentView()
-                .environment(appState)
-                .task {
-                    await appState.refreshBrewStatus()
+            Group {
+                if appState.isReady {
+                    ContentView()
+                } else {
+                    OnboardingView()
                 }
-                .frame(minWidth: 860, minHeight: 560)
+            }
+            .environment(appState)
+            .task {
+                await appState.refreshBrewStatus()
+                appState.refreshHelperStatus()
+            }
+            .frame(minWidth: 860, minHeight: 560)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
