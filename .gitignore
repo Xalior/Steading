@@ -1,0 +1,10 @@
+# Tart VM images and working VMs — huge binary blobs, repo-local so
+# they stay off the system volume, never committed. TART_HOME must
+# be set to this directory (see tart/README.md) for every tart
+# invocation in this repo. Everything under tart/ is excluded
+# except the README which documents the layout.
+tart/*
+!tart/README.md
+
+# macOS
+.DS_Store
