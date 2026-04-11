@@ -5,15 +5,33 @@ Every script respects `TART_HOME` (defaulting to
 `$repo_root/tart/`) so all VM state lives alongside the repo on
 the McFiver volume.
 
+## Host dependencies
+
+- `tart` — `brew install cirruslabs/cli/tart`
+- `xcodegen` — `brew install xcodegen` (only needed on the host
+  for regenerating the Xcode project from `app/project.yml`)
+- `sshpass` — `brew install hudochenkov/sshpass/sshpass`
+  (needed when scripting the vanilla VM, which has no Tart Guest
+  Agent and is reached via `ssh admin@<ip>` with password `admin`)
+
 ## Two base images, two test shapes
 
 Steading's VM testing has two distinct purposes and matching base
-images, both from the cirruslabs OCI registry:
+images, both from the cirruslabs OCI registry. They're treated as
+**gold masters** in `tart/cache/OCIs/`: pulled once, never
+mutated. Every working VM is a CoW clone at `tart/vms/<name>/`
+which gets destroyed at the end of each test. `vm-down.sh` only
+touches clones.
 
-| Image | Size | Use case |
-|---|---|---|
-| `ghcr.io/cirruslabs/macos-tahoe-xcode:26.4` | ~140 GB | Build-test VM. Full Xcode 26.4 preinstalled. Used to verify the repo builds from a fresh checkout against a stock macOS 26 install (no state leaked from the dev host). |
-| `ghcr.io/cirruslabs/macos-tahoe-vanilla:26.4` | ~40 GB | Release-test VM. Clean macOS 26, no developer tools. Used to verify a built `Steading.app` runs on a real user's machine — tests the distribution artefact rather than the build. |
+| Image | Size | Guest channel | Use case |
+|---|---|---|---|
+| `ghcr.io/cirruslabs/macos-tahoe-xcode:26.4` | ~140 GB | `tart exec` (guest agent preinstalled) | Build-test VM. Full Xcode 26.4 preinstalled. Used to verify the repo builds from a fresh checkout against a stock macOS 26 install (no state leaked from the dev host). |
+| `ghcr.io/cirruslabs/macos-tahoe-vanilla:26.4` | ~50 GB | `ssh admin@<ip>` via `sshpass` | Release-test VM. Clean macOS 26, no developer tools, no brew, no guest agent. Used to verify a built `Steading.app` runs on a real user's machine — tests the distribution artefact rather than the build. |
+
+The vanilla image ships deliberately without the Tart Guest
+Agent (see `tart help exec`), which is why `vm-up.sh` probes two
+channels — `tart exec` first, then a port-22 SSH check — and
+returns as soon as either answers.
 
 ## One-time setup
 
