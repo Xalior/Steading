@@ -1,0 +1,82 @@
+name: Steading
+options:
+  bundleIdPrefix: com.xalior
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    MARKETING_VERSION: "0.0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    "CODE_SIGN_IDENTITY[sdk=macosx*]": Apple Development
+    DEVELOPMENT_TEAM: M353B943AK
+    ENABLE_HARDENED_RUNTIME: YES
+    GENERATE_INFOPLIST_FILE: YES
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    DEAD_CODE_STRIPPING: YES
+    COMBINE_HIDPI_IMAGES: YES
+
+targets:
+  Steading:
+    type: application
+    platform: macOS
+    sources:
+      - path: Steading
+        excludes:
+          - "Resources/LaunchDaemons/**"
+      - path: Steading/Resources/LaunchDaemons/com.xalior.Steading.privhelper.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchDaemons
+    dependencies:
+      - target: SteadingPrivHelper
+        embed: true
+        copy:
+          destination: executables
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.xalior.Steading
+        PRODUCT_NAME: Steading
+        INFOPLIST_KEY_CFBundleDisplayName: Steading
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_KEY_NSHumanReadableCopyright: MIT License
+        CODE_SIGN_ENTITLEMENTS: Steading/Steading.entitlements
+    scheme:
+      testTargets:
+        - SteadingTests
+      gatherCoverageData: true
+
+  SteadingPrivHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - path: SteadingPrivHelper
+      - path: Steading/Shared
+    settings:
+      base:
+        PRODUCT_NAME: SteadingPrivHelper
+        PRODUCT_BUNDLE_IDENTIFIER: com.xalior.Steading.privhelper
+        OTHER_CODE_SIGN_FLAGS: --identifier com.xalior.Steading.privhelper
+        SKIP_INSTALL: YES
+        ENABLE_HARDENED_RUNTIME: YES
+
+  SteadingTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: SteadingTests
+    dependencies:
+      - target: Steading
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.xalior.SteadingTests
+        BUNDLE_LOADER: $(TEST_HOST)
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Steading.app/Contents/MacOS/Steading

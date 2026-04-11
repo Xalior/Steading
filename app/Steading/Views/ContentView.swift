@@ -31,7 +31,16 @@ struct ContentView: View {
     @ViewBuilder
     private var detailView: some View {
         if let id = appState.selection, let item = Self.allItems.first(where: { $0.id == id }) {
-            CatalogDetailView(item: item)
+            switch item.kind {
+            case .builtIn:
+                if let runner = BuiltInServiceRegistry.runner(for: item.id) {
+                    BuiltInServiceDetailView(item: item, runner: runner)
+                } else {
+                    CatalogDetailView(item: item)
+                }
+            case .service, .webapp:
+                CatalogDetailView(item: item)
+            }
         } else {
             WelcomeView()
         }

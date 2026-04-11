@@ -8,24 +8,47 @@
 
 /* Begin PBXBuildFile section */
 		0473162414D5D26E25A7411D /* BrewDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B0EE6A70B228F7CB0D472F /* BrewDetector.swift */; };
+		04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */; };
 		051FB78D75D68C7C13D40855 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE58958345FEE2847E8E57AE /* WelcomeView.swift */; };
 		08FA41D5EA90086176A8F033 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C68F7A05734954EA423C2B6 /* AppDelegate.swift */; };
 		129B589725293E7C791250B6 /* CatalogItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F631AFF0C04F2D5533E126C /* CatalogItem.swift */; };
 		13CB00A9DB893D37E7E9F62E /* CatalogDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2DB46FC31752B14A6A9B387 /* CatalogDetailView.swift */; };
+		18D98BF9F9860CAD63970523 /* PrivHelperListenerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AA1D53A34F5A36CDB3D4188 /* PrivHelperListenerDelegate.swift */; };
 		1C4F0835A7C272784210CBF2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7707938979911C8523D73059 /* ContentView.swift */; };
 		1ECA67F611AE2F6C1475362F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ABA7DFE5D12701CCFF57393A /* Assets.xcassets */; };
 		3F152B117F7523EACC1F2174 /* SteadingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7F24EC4CEA4DD4488FFA7D3 /* SteadingApp.swift */; };
 		5C2F5F90DF0D64C93A1123B0 /* WebappCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1607A01EF1A948C711D87CFC /* WebappCatalog.swift */; };
+		5D8F1B92C479185B2A9E0180 /* BuiltInServiceRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 518AD0434FFD8D998CAC5FB6 /* BuiltInServiceRunner.swift */; };
+		6DAE7C151728E1ECFB995D83 /* PrivHelperAllowlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EFEB5D383616F979F1C63F /* PrivHelperAllowlist.swift */; };
 		743FCC283A04402A9CDD7AA4 /* BuiltInCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 992A0F7706B92B084A1BDBF7 /* BuiltInCatalog.swift */; };
+		774658EDFBADE0C11997318B /* SteadingPrivHelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C7A751F5DDA87B5F0E5F2F /* SteadingPrivHelperProtocol.swift */; };
+		8078EC400560936602AA6010 /* BuiltInServiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B1E7B0845CEB8241142969C /* BuiltInServiceDetailView.swift */; };
+		8D5CF143A5C744BBDDD1B339 /* com.xalior.Steading.privhelper.plist in CopyFiles */ = {isa = PBXBuildFile; fileRef = A6E4C4D985048F9CF0B1285C /* com.xalior.Steading.privhelper.plist */; };
 		931FE6204696DA4E9DCAD0A1 /* BrewStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8794DE1ECD29CC0BF8B94D3 /* BrewStatusBadge.swift */; };
 		948E99504645C1D7F2CBCC54 /* MenuBarContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6CBE520AEE4A16C62B7F389 /* MenuBarContent.swift */; };
+		9D406F49ADA6A79196E73DF8 /* ProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47A7FDF1CF6DD4DD317F06EE /* ProcessRunner.swift */; };
 		A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */; };
+		B6922DDBE8E384BB1C266E7C /* PrivHelperAllowlistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */; };
+		BF5BEB980CBCF5EF87BE9855 /* PrivHelperClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D91110641303655AF49F7B /* PrivHelperClient.swift */; };
+		C03D42EA4DA31CDF685D457F /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E9A1CB32DC5FC5DBF3CB877 /* main.swift */; };
+		CADFD3BED81464CA0D745B1C /* BuiltInServiceRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE01FD58CA5CED026DC5AF1 /* BuiltInServiceRegistry.swift */; };
 		E89CE1926409C2113DE7F06C /* ServiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */; };
 		EB2C97840B93FBF7A5F4A358 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 455044AAFD76888EB755F58A /* SidebarView.swift */; };
+		ED95596C683C948EEC206B68 /* SteadingPrivHelper in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = E0ADD5FDB11E296C53AA5C23 /* SteadingPrivHelper */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EF7CB3D4B2A650A7DD19CADC /* PrivHelperAllowlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EFEB5D383616F979F1C63F /* PrivHelperAllowlist.swift */; };
+		F1F6D12782FC97DA4C8A45CD /* PrivHelperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A1713AF56D19F115490A16 /* PrivHelperService.swift */; };
 		F84EDC35803FF585F1DD257C /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E252BAAD2701A33DFB2D5805 /* AppState.swift */; };
+		FAD92124A6EC7F2C722553D3 /* SteadingPrivHelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C7A751F5DDA87B5F0E5F2F /* SteadingPrivHelperProtocol.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		015DE6D0CE91785F4EF072FD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0B42B6529EC5AD3CA1186D5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 03959C0267933A4F8AA0AE23;
+			remoteInfo = SteadingPrivHelper;
+		};
 		256EAD6CDA8281FC077598B1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 0B42B6529EC5AD3CA1186D5A /* Project object */;
@@ -35,23 +58,61 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		028A9751306E9BF50FB05C04 /* Embed Dependencies */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				ED95596C683C948EEC206B68 /* SteadingPrivHelper in Embed Dependencies */,
+			);
+			name = "Embed Dependencies";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3EADA8290DBA2F76F5E6C024 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/LaunchDaemons;
+			dstSubfolderSpec = 1;
+			files = (
+				8D5CF143A5C744BBDDD1B339 /* com.xalior.Steading.privhelper.plist in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		0B1E7B0845CEB8241142969C /* BuiltInServiceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceDetailView.swift; sourceTree = "<group>"; };
+		10A1713AF56D19F115490A16 /* PrivHelperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperService.swift; sourceTree = "<group>"; };
 		1607A01EF1A948C711D87CFC /* WebappCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebappCatalog.swift; sourceTree = "<group>"; };
 		1C5B9FA877D00376140D115F /* Steading.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Steading.entitlements; sourceTree = "<group>"; };
 		1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewDetectorTests.swift; sourceTree = "<group>"; };
+		35D91110641303655AF49F7B /* PrivHelperClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperClient.swift; sourceTree = "<group>"; };
 		3F631AFF0C04F2D5533E126C /* CatalogItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogItem.swift; sourceTree = "<group>"; };
 		455044AAFD76888EB755F58A /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		47A7FDF1CF6DD4DD317F06EE /* ProcessRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRunner.swift; sourceTree = "<group>"; };
+		518AD0434FFD8D998CAC5FB6 /* BuiltInServiceRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRunner.swift; sourceTree = "<group>"; };
 		67122EEE7E798D244CDA0628 /* Steading.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Steading.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRunnerTests.swift; sourceTree = "<group>"; };
 		7707938979911C8523D73059 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7C68F7A05734954EA423C2B6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		8E9A1CB32DC5FC5DBF3CB877 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		95C7A751F5DDA87B5F0E5F2F /* SteadingPrivHelperProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteadingPrivHelperProtocol.swift; sourceTree = "<group>"; };
 		96B0EE6A70B228F7CB0D472F /* BrewDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewDetector.swift; sourceTree = "<group>"; };
 		992A0F7706B92B084A1BDBF7 /* BuiltInCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInCatalog.swift; sourceTree = "<group>"; };
+		9AA1D53A34F5A36CDB3D4188 /* PrivHelperListenerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperListenerDelegate.swift; sourceTree = "<group>"; };
 		A6CBE520AEE4A16C62B7F389 /* MenuBarContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarContent.swift; sourceTree = "<group>"; };
+		A6E4C4D985048F9CF0B1285C /* com.xalior.Steading.privhelper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = com.xalior.Steading.privhelper.plist; sourceTree = "<group>"; };
+		AAE01FD58CA5CED026DC5AF1 /* BuiltInServiceRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRegistry.swift; sourceTree = "<group>"; };
 		ABA7DFE5D12701CCFF57393A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B0EFEB5D383616F979F1C63F /* PrivHelperAllowlist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperAllowlist.swift; sourceTree = "<group>"; };
 		B8794DE1ECD29CC0BF8B94D3 /* BrewStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewStatusBadge.swift; sourceTree = "<group>"; };
 		BAE4B102376FC6E3D88E0B21 /* SteadingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SteadingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE58958345FEE2847E8E57AE /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		D7F24EC4CEA4DD4488FFA7D3 /* SteadingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteadingApp.swift; sourceTree = "<group>"; };
+		DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperAllowlistTests.swift; sourceTree = "<group>"; };
+		E0ADD5FDB11E296C53AA5C23 /* SteadingPrivHelper */ = {isa = PBXFileReference; includeInIndex = 0; path = SteadingPrivHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		E252BAAD2701A33DFB2D5805 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		F2DB46FC31752B14A6A9B387 /* CatalogDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogDetailView.swift; sourceTree = "<group>"; };
 		FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceCatalog.swift; sourceTree = "<group>"; };
@@ -63,17 +124,38 @@
 			children = (
 				96B0EE6A70B228F7CB0D472F /* BrewDetector.swift */,
 				992A0F7706B92B084A1BDBF7 /* BuiltInCatalog.swift */,
+				AAE01FD58CA5CED026DC5AF1 /* BuiltInServiceRegistry.swift */,
+				518AD0434FFD8D998CAC5FB6 /* BuiltInServiceRunner.swift */,
 				3F631AFF0C04F2D5533E126C /* CatalogItem.swift */,
+				47A7FDF1CF6DD4DD317F06EE /* ProcessRunner.swift */,
 				FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */,
 				1607A01EF1A948C711D87CFC /* WebappCatalog.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
 		};
+		0C93EE02A882805102D61BF0 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				B0EFEB5D383616F979F1C63F /* PrivHelperAllowlist.swift */,
+				95C7A751F5DDA87B5F0E5F2F /* SteadingPrivHelperProtocol.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		35E09EBB0F14D7B9714A08E2 /* LaunchDaemons */ = {
+			isa = PBXGroup;
+			children = (
+				A6E4C4D985048F9CF0B1285C /* com.xalior.Steading.privhelper.plist */,
+			);
+			path = LaunchDaemons;
+			sourceTree = "<group>";
+		};
 		3A0B62BECBDB0F9E6DC3EF72 = {
 			isa = PBXGroup;
 			children = (
 				9C6C9A0AD87A94826106C605 /* Steading */,
+				CC43D79913B64D2F1F08D4A5 /* SteadingPrivHelper */,
 				99F19EC6C2B3066D9A7BF262 /* SteadingTests */,
 				BD98C6607A2B5A45ADA42203 /* Products */,
 			);
@@ -83,6 +165,7 @@
 			isa = PBXGroup;
 			children = (
 				B8794DE1ECD29CC0BF8B94D3 /* BrewStatusBadge.swift */,
+				0B1E7B0845CEB8241142969C /* BuiltInServiceDetailView.swift */,
 				F2DB46FC31752B14A6A9B387 /* CatalogDetailView.swift */,
 				7707938979911C8523D73059 /* ContentView.swift */,
 				A6CBE520AEE4A16C62B7F389 /* MenuBarContent.swift */,
@@ -96,6 +179,8 @@
 			isa = PBXGroup;
 			children = (
 				1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */,
+				67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */,
+				DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */,
 			);
 			path = SteadingTests;
 			sourceTree = "<group>";
@@ -105,6 +190,8 @@
 			children = (
 				F24986198C1480714F58FC36 /* App */,
 				003554F7110ECF517DE6A770 /* Model */,
+				CACD6E897D21D1104767129E /* Resources */,
+				0C93EE02A882805102D61BF0 /* Shared */,
 				4FBB910B5E22E40FBB2FEDAA /* Views */,
 				ABA7DFE5D12701CCFF57393A /* Assets.xcassets */,
 				1C5B9FA877D00376140D115F /* Steading.entitlements */,
@@ -116,9 +203,28 @@
 			isa = PBXGroup;
 			children = (
 				67122EEE7E798D244CDA0628 /* Steading.app */,
+				E0ADD5FDB11E296C53AA5C23 /* SteadingPrivHelper */,
 				BAE4B102376FC6E3D88E0B21 /* SteadingTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		CACD6E897D21D1104767129E /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				35E09EBB0F14D7B9714A08E2 /* LaunchDaemons */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		CC43D79913B64D2F1F08D4A5 /* SteadingPrivHelper */ = {
+			isa = PBXGroup;
+			children = (
+				8E9A1CB32DC5FC5DBF3CB877 /* main.swift */,
+				9AA1D53A34F5A36CDB3D4188 /* PrivHelperListenerDelegate.swift */,
+				10A1713AF56D19F115490A16 /* PrivHelperService.swift */,
+			);
+			path = SteadingPrivHelper;
 			sourceTree = "<group>";
 		};
 		F24986198C1480714F58FC36 /* App */ = {
@@ -126,6 +232,7 @@
 			children = (
 				7C68F7A05734954EA423C2B6 /* AppDelegate.swift */,
 				E252BAAD2701A33DFB2D5805 /* AppState.swift */,
+				35D91110641303655AF49F7B /* PrivHelperClient.swift */,
 				D7F24EC4CEA4DD4488FFA7D3 /* SteadingApp.swift */,
 			);
 			path = App;
@@ -134,16 +241,36 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		03959C0267933A4F8AA0AE23 /* SteadingPrivHelper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0BCCB98BA75913A9E186E92E /* Build configuration list for PBXNativeTarget "SteadingPrivHelper" */;
+			buildPhases = (
+				640AA2B9BA1FFDB1360AEE6C /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SteadingPrivHelper;
+			packageProductDependencies = (
+			);
+			productName = SteadingPrivHelper;
+			productReference = E0ADD5FDB11E296C53AA5C23 /* SteadingPrivHelper */;
+			productType = "com.apple.product-type.tool";
+		};
 		082FB2CDD15C12FBCD6246F8 /* Steading */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A3326C68F5F0486CC054FAE3 /* Build configuration list for PBXNativeTarget "Steading" */;
 			buildPhases = (
 				38FE6A3F042156826422A48D /* Sources */,
 				28C75C38B96100329331EC3E /* Resources */,
+				3EADA8290DBA2F76F5E6C024 /* CopyFiles */,
+				028A9751306E9BF50FB05C04 /* Embed Dependencies */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AA0C2593B906896BFD298A3F /* PBXTargetDependency */,
 			);
 			name = Steading;
 			packageProductDependencies = (
@@ -179,6 +306,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					03959C0267933A4F8AA0AE23 = {
+						DevelopmentTeam = M353B943AK;
+						ProvisioningStyle = Automatic;
+					};
 					082FB2CDD15C12FBCD6246F8 = {
 						DevelopmentTeam = M353B943AK;
 						ProvisioningStyle = Automatic;
@@ -204,6 +335,7 @@
 			projectRoot = "";
 			targets = (
 				082FB2CDD15C12FBCD6246F8 /* Steading */,
+				03959C0267933A4F8AA0AE23 /* SteadingPrivHelper */,
 				7A48A3B0FFD28BC4672FE55A /* SteadingTests */,
 			);
 		};
@@ -230,15 +362,34 @@
 				0473162414D5D26E25A7411D /* BrewDetector.swift in Sources */,
 				931FE6204696DA4E9DCAD0A1 /* BrewStatusBadge.swift in Sources */,
 				743FCC283A04402A9CDD7AA4 /* BuiltInCatalog.swift in Sources */,
+				8078EC400560936602AA6010 /* BuiltInServiceDetailView.swift in Sources */,
+				CADFD3BED81464CA0D745B1C /* BuiltInServiceRegistry.swift in Sources */,
+				5D8F1B92C479185B2A9E0180 /* BuiltInServiceRunner.swift in Sources */,
 				13CB00A9DB893D37E7E9F62E /* CatalogDetailView.swift in Sources */,
 				129B589725293E7C791250B6 /* CatalogItem.swift in Sources */,
 				1C4F0835A7C272784210CBF2 /* ContentView.swift in Sources */,
 				948E99504645C1D7F2CBCC54 /* MenuBarContent.swift in Sources */,
+				6DAE7C151728E1ECFB995D83 /* PrivHelperAllowlist.swift in Sources */,
+				BF5BEB980CBCF5EF87BE9855 /* PrivHelperClient.swift in Sources */,
+				9D406F49ADA6A79196E73DF8 /* ProcessRunner.swift in Sources */,
 				E89CE1926409C2113DE7F06C /* ServiceCatalog.swift in Sources */,
 				EB2C97840B93FBF7A5F4A358 /* SidebarView.swift in Sources */,
 				3F152B117F7523EACC1F2174 /* SteadingApp.swift in Sources */,
+				774658EDFBADE0C11997318B /* SteadingPrivHelperProtocol.swift in Sources */,
 				5C2F5F90DF0D64C93A1123B0 /* WebappCatalog.swift in Sources */,
 				051FB78D75D68C7C13D40855 /* WelcomeView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		640AA2B9BA1FFDB1360AEE6C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EF7CB3D4B2A650A7DD19CADC /* PrivHelperAllowlist.swift in Sources */,
+				18D98BF9F9860CAD63970523 /* PrivHelperListenerDelegate.swift in Sources */,
+				F1F6D12782FC97DA4C8A45CD /* PrivHelperService.swift in Sources */,
+				FAD92124A6EC7F2C722553D3 /* SteadingPrivHelperProtocol.swift in Sources */,
+				C03D42EA4DA31CDF685D457F /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -247,6 +398,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */,
+				04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */,
+				B6922DDBE8E384BB1C266E7C /* PrivHelperAllowlistTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -257,6 +410,11 @@
 			isa = PBXTargetDependency;
 			target = 082FB2CDD15C12FBCD6246F8 /* Steading */;
 			targetProxy = 256EAD6CDA8281FC077598B1 /* PBXContainerItemProxy */;
+		};
+		AA0C2593B906896BFD298A3F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 03959C0267933A4F8AA0AE23 /* SteadingPrivHelper */;
+			targetProxy = 015DE6D0CE91785F4EF072FD /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -398,6 +556,40 @@
 			};
 			name = Release;
 		};
+		9E6FA64579B8293855869FBB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_CODE_SIGN_FLAGS = "--identifier com.xalior.Steading.privhelper";
+				PRODUCT_BUNDLE_IDENTIFIER = com.xalior.Steading.privhelper;
+				PRODUCT_NAME = SteadingPrivHelper;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		9EA7ABB476070A7FC4D94844 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_CODE_SIGN_FLAGS = "--identifier com.xalior.Steading.privhelper";
+				PRODUCT_BUNDLE_IDENTIFIER = com.xalior.Steading.privhelper;
+				PRODUCT_NAME = SteadingPrivHelper;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
 		C0BCC59B9CB7254C4AAE381D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -475,6 +667,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		0BCCB98BA75913A9E186E92E /* Build configuration list for PBXNativeTarget "SteadingPrivHelper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9EA7ABB476070A7FC4D94844 /* Debug */,
+				9E6FA64579B8293855869FBB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		12DBF98D0BCA99C9BBEDA89C /* Build configuration list for PBXProject "Steading" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -1,0 +1,183 @@
+import Foundation
+import ServiceManagement
+import os.log
+
+/// The main app's gateway to the privileged helper. Owns registration
+/// with `SMAppService` and the `NSXPCConnection` used to dispatch
+/// commands.
+///
+/// Design notes
+/// ------------
+/// - One long-lived `NSXPCConnection` per run of the app. launchd
+///   manages the helper process's lifetime on the other side; this
+///   client just pools the connection and re-creates it if it's
+///   invalidated.
+/// - `runCommand(_:)` takes the same argv shape as the built-in
+///   service runners' `enableCommand` / `disableCommand` arrays — the
+///   first element is the executable, the rest are arguments.
+/// - Every failure bubbles as a `PrivHelperClient.Error` with a
+///   user-shaped message; `BuiltInServiceDetailView` surfaces it
+///   verbatim in its error banner.
+@MainActor
+final class PrivHelperClient {
+
+    static let shared = PrivHelperClient()
+
+    enum Error: Swift.Error, LocalizedError {
+        case empty
+        case registrationFailed(String)
+        case requiresApproval
+        case notRegistered
+        case noProxy
+        case xpcFailed(String)
+        case helperError(code: Int32, message: String)
+
+        var errorDescription: String? {
+            switch self {
+            case .empty:
+                return "Empty command"
+            case .registrationFailed(let msg):
+                return "Could not register privileged helper: \(msg)"
+            case .requiresApproval:
+                return "Steading's privileged helper is awaiting your approval in System Settings → General → Login Items & Extensions."
+            case .notRegistered:
+                return "Privileged helper is not registered."
+            case .noProxy:
+                return "Could not reach the privileged helper (no remote proxy)."
+            case .xpcFailed(let msg):
+                return "XPC connection failed: \(msg)"
+            case .helperError(let code, let message):
+                return "Helper returned exit \(code): \(message)"
+            }
+        }
+    }
+
+    /// Embedded-LaunchDaemon-plist filename inside the app bundle's
+    /// `Contents/Library/LaunchDaemons/` directory. Must match the
+    /// file we drop at build time.
+    private let daemonPlistName = "com.xalior.Steading.privhelper.plist"
+
+    private let log = Logger(subsystem: "com.xalior.Steading", category: "privhelper-client")
+    private var connection: NSXPCConnection?
+
+    private init() {}
+
+    // MARK: - Registration
+
+    /// Current SMAppService registration status for the helper.
+    var status: SMAppService.Status {
+        SMAppService.daemon(plistName: daemonPlistName).status
+    }
+
+    /// Register the helper with SMAppService. If it's already
+    /// registered this is a no-op. If it's pending approval the
+    /// status stays `.requiresApproval` until the user toggles it in
+    /// System Settings.
+    func registerIfNeeded() throws {
+        let service = SMAppService.daemon(plistName: daemonPlistName)
+        switch service.status {
+        case .enabled:
+            return
+        case .requiresApproval:
+            throw Error.requiresApproval
+        case .notRegistered, .notFound:
+            do {
+                try service.register()
+            } catch {
+                throw Error.registrationFailed(error.localizedDescription)
+            }
+            // Re-check status — registration often lands in
+            // .requiresApproval the first time.
+            if service.status == .requiresApproval {
+                throw Error.requiresApproval
+            }
+        @unknown default:
+            throw Error.notRegistered
+        }
+    }
+
+    /// Open System Settings on the Login Items pane so the user can
+    /// flip the approval switch.
+    func openLoginItemsSettings() {
+        SMAppService.openSystemSettingsLoginItems()
+    }
+
+    // MARK: - XPC
+
+    /// Run a command through the helper and return the captured
+    /// result. Blocks until the helper replies.
+    func runCommand(_ command: [String]) async throws -> ProcessRunner.Result {
+        guard let first = command.first else { throw Error.empty }
+        let arguments = Array(command.dropFirst())
+
+        let conn = try connect()
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let proxy = conn.remoteObjectProxyWithErrorHandler { error in
+                continuation.resume(throwing: Error.xpcFailed(error.localizedDescription))
+            } as? SteadingPrivHelperProtocol
+
+            guard let proxy else {
+                continuation.resume(throwing: Error.noProxy)
+                return
+            }
+
+            proxy.runCommand(executable: first, arguments: arguments) { code, outData, errData in
+                let stdout = String(data: outData, encoding: .utf8) ?? ""
+                let stderr = String(data: errData, encoding: .utf8) ?? ""
+                continuation.resume(returning: ProcessRunner.Result(
+                    exitCode: code, stdout: stdout, stderr: stderr
+                ))
+            }
+        }
+    }
+
+    /// Ask the helper for its version string. Useful as a ping and
+    /// for detecting a stale helper registration.
+    func helperVersion() async throws -> String {
+        let conn = try connect()
+        return try await withCheckedThrowingContinuation { continuation in
+            let proxy = conn.remoteObjectProxyWithErrorHandler { error in
+                continuation.resume(throwing: Error.xpcFailed(error.localizedDescription))
+            } as? SteadingPrivHelperProtocol
+
+            guard let proxy else {
+                continuation.resume(throwing: Error.noProxy)
+                return
+            }
+            proxy.helperVersion { version in
+                continuation.resume(returning: version)
+            }
+        }
+    }
+
+    // MARK: - Connection
+
+    private func connect() throws -> NSXPCConnection {
+        if let connection { return connection }
+
+        // .privileged tells NSXPCConnection to look for the mach
+        // service in launchd's system domain (i.e. a LaunchDaemon),
+        // not a LaunchAgent.
+        let conn = NSXPCConnection(
+            machServiceName: SteadingPrivHelperMachServiceName,
+            options: .privileged
+        )
+        conn.remoteObjectInterface = NSXPCInterface(with: SteadingPrivHelperProtocol.self)
+        conn.invalidationHandler = { [weak self] in
+            Task { @MainActor in
+                self?.log.info("priv helper XPC connection invalidated")
+                self?.connection = nil
+            }
+        }
+        conn.interruptionHandler = { [weak self] in
+            Task { @MainActor in
+                self?.log.info("priv helper XPC connection interrupted")
+                self?.connection = nil
+            }
+        }
+        conn.resume()
+        connection = conn
+        return conn
+    }
+}
