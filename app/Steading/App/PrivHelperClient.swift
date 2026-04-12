@@ -60,6 +60,20 @@ final class PrivHelperClient {
     private let log = Logger(subsystem: "com.xalior.Steading", category: "privhelper-client")
     private var connection: NSXPCConnection?
 
+    /// Code-signing designated requirement the helper process must
+    /// satisfy before we'll send it commands. Mirror of the client
+    /// requirement the helper pins on its side (PrivHelperListener-
+    /// Delegate): both ends check the other against the Steading
+    /// team OU and the expected bundle identifier, so nothing squatting
+    /// the mach service name can impersonate the real helper.
+    ///
+    /// See docs/ARCHITECTURE.md — "Mutual code-sign pinning" — for the
+    /// threat model this closes.
+    private let helperRequirement =
+        "identifier \"com.xalior.Steading.privhelper\" and anchor apple generic and " +
+        "certificate 1[field.1.2.840.113635.100.6.2.1] /* exists */ and " +
+        "certificate leaf[subject.OU] = \"M353B943AK\""
+
     private init() {}
 
     // MARK: - Registration
@@ -163,6 +177,10 @@ final class PrivHelperClient {
             machServiceName: SteadingPrivHelperMachServiceName,
             options: .privileged
         )
+        // Refuse to talk to anything on the other end of the mach
+        // service that isn't the real Steading helper. Closes the
+        // symmetric gap to the helper's own client verification.
+        conn.setCodeSigningRequirement(helperRequirement)
         conn.remoteObjectInterface = NSXPCInterface(with: SteadingPrivHelperProtocol.self)
         conn.invalidationHandler = { [weak self] in
             Task { @MainActor in
