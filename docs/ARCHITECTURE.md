@@ -24,7 +24,7 @@ dispatched to the privileged helper, which runs as a LaunchDaemon
 managed by `launchd` after the user approves it once via
 `SMAppService`.
 
-This split is the load-bearing architectural choice: it's what lets
+This split is the central architectural choice: it's what lets
 Steading ship as a notarized Developer ID app without asking the
 user to install anything with `sudo` by hand, and it's what keeps
 the main SwiftUI process entirely out of the privilege path (so
