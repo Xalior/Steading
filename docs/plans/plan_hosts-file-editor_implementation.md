@@ -81,3 +81,17 @@ and hasn't merged yet.
 
 - 2026-04-12: branch cut from `feature/builtin-service-controllers`,
   plan drafted.
+- 2026-04-12: ARCHITECTURE.md updated with mutual-pinning threat
+  model and file-mutation rationale (commit `7553e38`).
+- 2026-04-12: client-side `setCodeSigningRequirement` landed in
+  `PrivHelperClient.connect()` (commit `2f55e62`).
+- 2026-04-12: `writeHostsFile` XPC method added; protocol bumped to
+  `0.0.2` (commit `9893837`).
+- 2026-04-12: Tools menu + `HostsEditorView` window scene wired up
+  in `SteadingApp` (commit `26384a3`).
+- 2026-04-12: atomic-write refactor into `Shared/HostsFileWriter` +
+  6 round-trip / boundary tests (commit `f0cbe45`).
+- 2026-04-12: build green, full test suite 55/55 passing including
+  the new `HostsFileWriter` suite. Manual `/etc/hosts` write
+  verification deferred to next at-desk session (requires the
+  helper to be registered and the user to click Save in the UI).
