@@ -5,6 +5,13 @@ struct SidebarView: View {
 
     var body: some View {
         List(selection: $selection) {
+            // Top-level Dashboard row — outside any section, native
+            // macOS pattern for a "home" entry above categorised
+            // content. Selects the sentinel tag which ContentView
+            // routes to DashboardView.
+            Label("Dashboard", systemImage: "square.grid.2x2")
+                .tag(CatalogItem.dashboardTag as CatalogItem.ID?)
+
             Section("Services") {
                 ForEach(ServiceCatalog.items) { item in
                     CatalogRow(item: item)

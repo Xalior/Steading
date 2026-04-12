@@ -17,7 +17,11 @@ struct ContentView: View {
 
     @ViewBuilder
     private var detailView: some View {
-        if let id = appState.selection, let item = Self.allItems.first(where: { $0.id == id }) {
+        // Treat both `nil` and the Dashboard sentinel as "show the
+        // dashboard". Any real catalog id routes to its detail view.
+        if let id = appState.selection,
+           id != CatalogItem.dashboardTag,
+           let item = Self.allItems.first(where: { $0.id == id }) {
             switch item.kind {
             case .builtIn:
                 if let runner = BuiltInServiceRegistry.runner(for: item.id) {
