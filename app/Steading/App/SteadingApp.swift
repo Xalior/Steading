@@ -27,13 +27,36 @@ struct SteadingApp: App {
         .defaultSize(width: 1120, height: 720)
         .commands {
             CommandGroup(replacing: .newItem) { }
+            CommandMenu("Tools") {
+                ToolsMenuContent()
+            }
         }
+
+        Window("Edit /etc/hosts", id: "hosts-editor") {
+            HostsEditorView()
+                .environment(appState)
+        }
+        .windowStyle(.titleBar)
+        .defaultSize(width: 720, height: 520)
 
         MenuBarExtra("Steading", systemImage: "house.fill") {
             MenuBarContent()
                 .environment(appState)
         }
         .menuBarExtraStyle(.window)
+    }
+}
+
+/// Body of the main menu bar's **Tools** menu. Split out so the `@Environment`
+/// openWindow action is available (it isn't inside the `.commands` modifier's
+/// builder directly).
+private struct ToolsMenuContent: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Edit /etc/hosts…") {
+            openWindow(id: "hosts-editor")
+        }
     }
 }
 
