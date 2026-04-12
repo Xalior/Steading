@@ -107,7 +107,7 @@ The user is senior, remote-first (browser-based Claude Code), and
 has explicit preferences:
 
 - **Tight cadence.** No speculation when you can verify. Use tools
-  rather than guess.
+  rather than guess. Don't engage in scope creep.
 - **Own corrections cleanly.** If the user corrects something, save
   it as a durable rule (here, or in auto-memory) — don't apply it
   once and forget.
