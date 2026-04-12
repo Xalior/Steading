@@ -42,7 +42,14 @@ struct DashboardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task { await loadStates() }
+        // Re-fire whenever sidebar selection changes — specifically
+        // fires again when the user navigates BACK to the dashboard
+        // (selection -> nil), so any Enable/Disable action that
+        // happened in a detail view is reflected here on return.
+        .task(id: appState.selection) {
+            guard appState.selection == nil else { return }
+            await loadStates()
+        }
     }
 
     // MARK: - Header
@@ -129,14 +136,36 @@ private struct ServiceStatusCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(.background.secondary)
+                    .fill(backgroundFill)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(tint.opacity(0.2), lineWidth: 0.5)
+                    .stroke(tint.opacity(isActive ? 0.6 : 0.2),
+                            lineWidth: isActive ? 1 : 0.5)
             )
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Active highlighting
+
+    /// Cards for services that are currently ON get a stronger tint
+    /// on the background and border so the dashboard reads at a glance
+    /// as "what's running here".
+    private var isActive: Bool {
+        switch state {
+        case .enabled:                      return true
+        case .custom(_, .some(true)):       return true
+        default:                            return false
+        }
+    }
+
+    private var backgroundFill: AnyShapeStyle {
+        if isActive {
+            AnyShapeStyle(tint.opacity(0.08).gradient)
+        } else {
+            AnyShapeStyle(.background.secondary)
+        }
     }
 
     // MARK: - State chip
