@@ -31,8 +31,8 @@ extension BuiltInServiceRunner {
         readState: {
             await launchdSystemOverrideState(label: "com.openssh.sshd")
         },
-        enableCommand:  ["/usr/sbin/systemsetup", "-setremotelogin", "on"],
-        disableCommand: ["/usr/sbin/systemsetup", "-f", "-setremotelogin", "off"]
+        enableCommands:  [["/usr/sbin/systemsetup", "-setremotelogin", "on"]],
+        disableCommands: [["/usr/sbin/systemsetup", "-f", "-setremotelogin", "off"]]
     )
 
     // MARK: - SMB / File Sharing
@@ -45,8 +45,18 @@ extension BuiltInServiceRunner {
         readState: {
             await launchdSystemOverrideState(label: "com.apple.smbd")
         },
-        enableCommand:  ["/bin/launchctl", "enable",  "system/com.apple.smbd"],
-        disableCommand: ["/bin/launchctl", "disable", "system/com.apple.smbd"]
+        // `launchctl enable` only flips the override; `kickstart -k`
+        // actually starts (or replaces) the daemon process right now.
+        enableCommands: [
+            ["/bin/launchctl", "enable",  "system/com.apple.smbd"],
+            ["/bin/launchctl", "kickstart", "-k", "system/com.apple.smbd"],
+        ],
+        // `disable` sets the override; `kill` delivers a signal to the
+        // running job so it stops immediately rather than at next boot.
+        disableCommands: [
+            ["/bin/launchctl", "disable", "system/com.apple.smbd"],
+            ["/bin/launchctl", "kill", "SIGTERM", "system/com.apple.smbd"],
+        ]
     )
 
     // MARK: - Screen Sharing
@@ -59,8 +69,14 @@ extension BuiltInServiceRunner {
         readState: {
             await launchdSystemOverrideState(label: "com.apple.screensharing")
         },
-        enableCommand:  ["/bin/launchctl", "enable",  "system/com.apple.screensharing"],
-        disableCommand: ["/bin/launchctl", "disable", "system/com.apple.screensharing"]
+        enableCommands: [
+            ["/bin/launchctl", "enable",  "system/com.apple.screensharing"],
+            ["/bin/launchctl", "kickstart", "-k", "system/com.apple.screensharing"],
+        ],
+        disableCommands: [
+            ["/bin/launchctl", "disable", "system/com.apple.screensharing"],
+            ["/bin/launchctl", "kill", "SIGTERM", "system/com.apple.screensharing"],
+        ]
     )
 
     // MARK: - Content Caching
@@ -80,8 +96,8 @@ extension BuiltInServiceRunner {
             if text.contains("Activated: false") { return .disabled }
             return .unknown(reason: "Could not parse AssetCacheManagerUtil output.")
         },
-        enableCommand:  ["/usr/bin/AssetCacheManagerUtil", "activate"],
-        disableCommand: ["/usr/bin/AssetCacheManagerUtil", "deactivate"]
+        enableCommands:  [["/usr/bin/AssetCacheManagerUtil", "activate"]],
+        disableCommands: [["/usr/bin/AssetCacheManagerUtil", "deactivate"]]
     )
 
     // MARK: - Firewall (socketfilterfw)
@@ -106,14 +122,14 @@ extension BuiltInServiceRunner {
             if out.contains("enabled")  { return .enabled  }
             return .unknown(reason: "Could not parse socketfilterfw output.")
         },
-        enableCommand:  [
+        enableCommands: [[
             "/usr/libexec/ApplicationFirewall/socketfilterfw",
             "--setglobalstate", "on"
-        ],
-        disableCommand: [
+        ]],
+        disableCommands: [[
             "/usr/libexec/ApplicationFirewall/socketfilterfw",
             "--setglobalstate", "off"
-        ]
+        ]]
     )
 
     // MARK: - Printer Sharing (CUPS)
@@ -137,8 +153,8 @@ extension BuiltInServiceRunner {
             }
             return .unknown(reason: "_share_printers not present in cupsctl output.")
         },
-        enableCommand:  ["/usr/sbin/cupsctl", "--share-printers"],
-        disableCommand: ["/usr/sbin/cupsctl", "--no-share-printers"]
+        enableCommands:  [["/usr/sbin/cupsctl", "--share-printers"]],
+        disableCommands: [["/usr/sbin/cupsctl", "--no-share-printers"]]
     )
 
     // MARK: - Power Management
@@ -165,8 +181,8 @@ extension BuiltInServiceRunner {
         },
         // Applying a 24/7 preset is a multi-command change; the UI
         // currently surfaces the observed values only.
-        enableCommand:  nil,
-        disableCommand: nil
+        enableCommands:  nil,
+        disableCommands: nil
     )
 
     // MARK: - Time Machine Server
@@ -179,8 +195,8 @@ extension BuiltInServiceRunner {
         readState: {
             .unknown(reason: "Requires multi-source detection; not yet implemented.")
         },
-        enableCommand:  nil,
-        disableCommand: nil
+        enableCommands:  nil,
+        disableCommands: nil
     )
 
     // MARK: - Helpers
