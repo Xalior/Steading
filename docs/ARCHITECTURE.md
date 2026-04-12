@@ -259,8 +259,14 @@ Since both targets compile these files independently, each has its
 own runtime copy. XPC crosses the boundary via `@objc` selectors —
 the two copies just need to agree on protocol shape.
 
-### Client verification
+### Mutual code-sign pinning
 
+Both ends of the XPC connection pin the other's code signature. This
+is the entire security boundary; every other access-control decision
+(the executable allowlist, the per-method narrowness of file-writing
+APIs) is defence in depth on top of it.
+
+**Helper pins its clients.**
 `PrivHelperListenerDelegate.listener(_:shouldAcceptNewConnection:)`
 rejects any connection whose code signature doesn't match:
 
@@ -270,12 +276,41 @@ certificate 1[field.1.2.840.113635.100.6.2.1] exists and
 certificate leaf[subject.OU] = "M353B943AK"
 ```
 
-This is the entire security boundary between the main app and root —
-only processes signed by the Steading team, with the Steading
-bundle id, can talk to the helper. The check uses
-`SecCodeCopyGuestWithAttributes` against the connecting client's
-audit token (from `NSXPCConnection.auditToken` via KVC, which is
-public API but not Objective-C visible).
+The check uses `SecCodeCopyGuestWithAttributes` against the
+connecting client's audit token (from `NSXPCConnection.auditToken`
+via KVC — public API but not Objective-C visible). Only a binary
+signed by the Steading team, with the Steading bundle id, can open
+an accepted connection.
+
+**Client pins its helper.** `PrivHelperClient.connect()` sets
+`NSXPCConnection.setCodeSigningRequirement(_:)` pinning the helper
+to bundle id `com.xalior.Steading.privhelper` and the same team OU.
+Without this, a hostile process squatting the mach service name
+`com.xalior.Steading.privhelper` in launchd's namespace could accept
+commands from the main app. With it, the main app refuses to talk
+to anything except a Steading-team-signed helper with the expected
+identifier.
+
+**Why this matters for how the XPC surface is reasoned about.** Any
+method exposed on `SteadingPrivHelperProtocol` can *only* be invoked
+by a binary signed by the Steading team with the Steading bundle id.
+It can *not* be invoked by:
+
+- arbitrary apps on the machine, signed or not
+- code running under the logged-in user that isn't Steading
+- anything attempting to impersonate the helper
+
+So when weighing whether a new helper method is "safe to expose",
+the threat model is not "what could any app on the machine do with
+this" — it's "what could a compromised Steading build do with this".
+That's a meaningfully narrower question, and it's what makes
+purpose-built, file-specific privileged operations (e.g. "write
+/etc/hosts", not "write any file") reasonable even though they
+can't be expressed as allowlisted-executable invocations. The
+allowlist is still tight for the executable-spawning path; file
+mutation lives in its own named methods with per-method constraints
+(path pinned, size capped, atomic write) and leans on the mutual
+code-sign pin for the "who is calling" half of the guarantee.
 
 ### Allowlist
 
@@ -292,6 +327,20 @@ commands. `PrivHelperAllowlist.isAllowed` gates every invocation:
 
 Arguments are not currently restricted. Tightening the allowlist to
 gate specific argument patterns is a future hardening step.
+
+### File-mutation methods
+
+For root-owned files Steading needs to edit (starting with
+`/etc/hosts`), the helper exposes purpose-built XPC methods rather
+than a generic `writeFile(path:data:)`. Each method pins the target
+path, caps the payload size, and writes atomically via a temp file
+in the same directory followed by `rename(2)`, with mode and
+ownership set explicitly on the temp file before the rename so the
+final inode always lands as `0644 root:wheel` regardless of umask.
+
+Adding a new editable file = adding a new named method with its own
+size cap and write semantics, not widening a path allowlist. That
+keeps each file's privileged-write surface reviewable in isolation.
 
 ### Client lifecycle
 
