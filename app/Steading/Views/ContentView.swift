@@ -13,19 +13,6 @@ struct ContentView: View {
             detailView
         }
         .navigationTitle("Steading")
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                BrewStatusBadge(state: appState.brewCheck)
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    Task { await appState.refreshBrewStatus() }
-                } label: {
-                    Label("Check for Homebrew", systemImage: "arrow.clockwise")
-                }
-                .disabled(appState.brewCheck == .checking)
-            }
-        }
     }
 
     @ViewBuilder
@@ -42,7 +29,7 @@ struct ContentView: View {
                 CatalogDetailView(item: item)
             }
         } else {
-            WelcomeView()
+            DashboardView()
         }
     }
 

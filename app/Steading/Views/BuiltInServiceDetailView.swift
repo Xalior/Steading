@@ -152,14 +152,8 @@ struct BuiltInServiceDetailView: View {
                 }
             }
             if isApplying {
-                Text("Applying… waiting on administrator password.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else if runner.enableCommand != nil || runner.disableCommand != nil {
-                Text("Applies through Steading's privileged helper — registered once with SMAppService, then invoked per operation. See DESIGN.md § Technical realities.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                ProgressView()
+                    .controlSize(.small)
             }
         }
     }
