@@ -31,6 +31,8 @@ final class PrivHelperClient {
         case noProxy
         case xpcFailed(String)
         case helperError(code: Int32, message: String)
+        case hostsFileTooLarge(Int)
+        case hostsWriteFailed(String)
 
         var errorDescription: String? {
             switch self {
@@ -48,6 +50,10 @@ final class PrivHelperClient {
                 return "XPC connection failed: \(msg)"
             case .helperError(let code, let message):
                 return "Helper returned exit \(code): \(message)"
+            case .hostsFileTooLarge(let size):
+                return "Hosts file is too large (\(size) bytes; limit is \(SteadingHostsFileMaxSize))."
+            case .hostsWriteFailed(let msg):
+                return "Could not write /etc/hosts: \(msg)"
             }
         }
     }
@@ -142,6 +148,38 @@ final class PrivHelperClient {
                 continuation.resume(returning: ProcessRunner.Result(
                     exitCode: code, stdout: stdout, stderr: stderr
                 ))
+            }
+        }
+    }
+
+    /// Atomically replace `/etc/hosts` with the given content. The
+    /// helper performs the write as root; callers provide the full
+    /// file contents.
+    func writeHostsFile(_ content: String) async throws {
+        guard let data = content.data(using: .utf8) else {
+            throw Error.hostsWriteFailed("Content is not valid UTF-8")
+        }
+        if data.count > SteadingHostsFileMaxSize {
+            throw Error.hostsFileTooLarge(data.count)
+        }
+
+        let conn = try connect()
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Swift.Error>) in
+            let proxy = conn.remoteObjectProxyWithErrorHandler { error in
+                continuation.resume(throwing: Error.xpcFailed(error.localizedDescription))
+            } as? SteadingPrivHelperProtocol
+
+            guard let proxy else {
+                continuation.resume(throwing: Error.noProxy)
+                return
+            }
+
+            proxy.writeHostsFile(content: data) { success, message in
+                if success {
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: Error.hostsWriteFailed(message))
+                }
             }
         }
     }
