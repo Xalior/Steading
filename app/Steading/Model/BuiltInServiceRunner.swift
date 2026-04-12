@@ -25,13 +25,11 @@ enum BuiltInServiceState: Sendable, Equatable {
 /// ------------
 /// - `readState` always hits the real system. All unprivileged probes
 ///   run through `ProcessRunner`.
-/// - `enableCommand` / `disableCommand` are *command specs*, not
-///   direct calls. `BuiltInServiceDetailView` feeds them to
-///   `PrivilegedShell.run(_:)` which is today's interim
-///   admin-privilege path (via `osascript`). When the SMAppService
-///   privileged helper lands (see DESIGN.md § Technical realities),
-///   only the `PrivilegedShell` implementation needs to change — the
-///   runners keep the same shape.
+/// - `enableCommands` / `disableCommands` are sequences of command
+///   specs run in order through `PrivHelperClient.runCommand`. Some
+///   services need multiple steps to take immediate effect — e.g.
+///   SMB needs `launchctl enable` (set the override) followed by
+///   `launchctl kickstart` (actually start the daemon now).
 struct BuiltInServiceRunner: Sendable {
     let id: String
     let displayName: String
@@ -40,11 +38,12 @@ struct BuiltInServiceRunner: Sendable {
     let detectionNote: String
     /// Live, unprivileged state read.
     let readState: @Sendable () async -> BuiltInServiceState
-    /// Command line that will enable the service when run with
-    /// administrator privileges. `nil` if the built-in doesn't have a
-    /// single-command enable (e.g. SMB needs share configuration,
-    /// Time Machine Server needs a destination).
-    let enableCommand: [String]?
-    /// Command line that will disable the service.
-    let disableCommand: [String]?
+    /// Ordered sequence of commands to enable the service. Each
+    /// command is an argv array run as root via the privileged helper.
+    /// `nil` if the service has no single-action enable path (e.g.
+    /// Power Management needs a multi-setting preset, Time Machine
+    /// needs share configuration).
+    let enableCommands: [[String]]?
+    /// Ordered sequence of commands to disable the service.
+    let disableCommands: [[String]]?
 }
