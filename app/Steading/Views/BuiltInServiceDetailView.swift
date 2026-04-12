@@ -122,7 +122,7 @@ struct BuiltInServiceDetailView: View {
     private var actionsCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
-                if runner.enableCommand != nil {
+                if runner.enableCommands != nil {
                     Button {
                         Task { await enable() }
                     } label: {
@@ -133,7 +133,7 @@ struct BuiltInServiceDetailView: View {
                     .controlSize(.large)
                     .disabled(isApplying || isRefreshing || currentlyOn == true)
                 }
-                if runner.disableCommand != nil {
+                if runner.disableCommands != nil {
                     Button {
                         Task { await disable() }
                     } label: {
@@ -144,7 +144,7 @@ struct BuiltInServiceDetailView: View {
                     .controlSize(.large)
                     .disabled(isApplying || isRefreshing || currentlyOn == false)
                 }
-                if runner.enableCommand == nil && runner.disableCommand == nil {
+                if runner.enableCommands == nil && runner.disableCommands == nil {
                     Text("Interactive configuration is not yet wired up for this service.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -263,29 +263,37 @@ struct BuiltInServiceDetailView: View {
     }
 
     private func enable() async {
-        guard let cmd = runner.enableCommand else { return }
-        await apply(cmd, label: "enable")
+        guard let commands = runner.enableCommands else { return }
+        await apply(commands, label: "enable")
     }
 
     private func disable() async {
-        guard let cmd = runner.disableCommand else { return }
-        await apply(cmd, label: "disable")
+        guard let commands = runner.disableCommands else { return }
+        await apply(commands, label: "disable")
     }
 
-    private func apply(_ command: [String], label: String) async {
+    /// Run each command in sequence through the privileged helper.
+    /// Bails on the first non-zero exit — some services (SMB, screen
+    /// sharing) need kickstart/kill *after* launchctl enable/disable
+    /// to take immediate effect, and they must not run if the first
+    /// step failed.
+    private func apply(_ commands: [[String]], label: String) async {
         isApplying = true
         errorMessage = nil
         needsApproval = false
         defer { isApplying = false }
         do {
             try PrivHelperClient.shared.registerIfNeeded()
-            let result = try await PrivHelperClient.shared.runCommand(command)
-            if !result.ok {
-                let raw = result.stderr.isEmpty ? result.stdout : result.stderr
-                let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-                errorMessage = "Failed to \(label) (exit \(result.exitCode))"
-                    + (trimmed.isEmpty ? "" : ": \(trimmed)")
-                return
+            for command in commands {
+                let result = try await PrivHelperClient.shared.runCommand(command)
+                if !result.ok {
+                    let raw = result.stderr.isEmpty ? result.stdout : result.stderr
+                    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let invoked = command.joined(separator: " ")
+                    errorMessage = "Failed to \(label) (exit \(result.exitCode) from `\(invoked)`)"
+                        + (trimmed.isEmpty ? "" : ": \(trimmed)")
+                    return
+                }
             }
             state = await runner.readState()
         } catch let error as PrivHelperClient.Error {
