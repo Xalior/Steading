@@ -1,8 +1,7 @@
 # Architecture
 
-How Steading is built. Read [DESIGN.md](../DESIGN.md) first for *what*
-Steading is and *why* — this document is about *how* the code
-delivers it.
+How Steading is built — the target layout, the privileged helper
+model, the catalog model, and the testing strategy.
 
 ## Overview
 
@@ -25,16 +24,17 @@ dispatched to the privileged helper, which runs as a LaunchDaemon
 managed by `launchd` after the user approves it once via
 `SMAppService`.
 
-This split is non-negotiable: it's what DESIGN.md § Technical
-realities calls for, and it's what lets Steading ship as a notarized
-Developer ID app without asking the user to install anything with
-`sudo` by hand.
+This split is the load-bearing architectural choice: it's what lets
+Steading ship as a notarized Developer ID app without asking the
+user to install anything with `sudo` by hand, and it's what keeps
+the main SwiftUI process entirely out of the privilege path (so
+anything a sandbox escape or UI compromise can reach is scoped to
+the single user, not root).
 
 ## Repository layout
 
 ```
 Steading/
-├── DESIGN.md                      ← product design (gold master)
 ├── README.md                      ← entry point for readers
 ├── CLAUDE.md                      ← agent-specific operating notes
 ├── LICENSE                        ← MIT
@@ -153,9 +153,11 @@ Catalog data lives in three `enum`s, each exposing a static
 | `WebappCatalog` | MediaWiki, WordPress, DokuWiki |
 | `BuiltInCatalog` | SMB, Time Machine Server, SSH, Screen Sharing, Firewall, Printer Sharing, Power Management, Content Caching |
 
-These are dummy data today — the real implementation will load from
-per-item definition files (DESIGN.md § Definition files). The
-structure is stable enough to keep using.
+These are dummy data today — the real implementation will load
+catalog entries from per-item definition files (schema TBD) so that
+adding a new service is a matter of dropping a file in rather than
+editing Swift. The runtime shape (`CatalogItem`) is stable enough
+to keep using against whatever definition-file format lands.
 
 ### Built-in service runners
 
@@ -367,25 +369,36 @@ the Steading cask, and providing formulae for anything Steading
 needs that isn't in `homebrew-core` (starting with the chosen mail
 server).
 
-## Design constraints
+## Architectural invariants
 
-Decisions that are fixed by [DESIGN.md](../DESIGN.md) and should not
-be reopened without updating the design doc first:
+Structural decisions that the rest of the codebase depends on. Any
+change to one of these is a change to the shape of the product,
+not a refactor.
 
 - **Not sandboxed.** The main app needs to talk to a non-sandboxed
-  privileged helper, and hardened runtime alone is enough for
-  notarization. App Store distribution is explicitly not a target.
+  privileged helper. Hardened runtime alone is enough for Developer
+  ID notarization. Mac App Store distribution isn't a target.
 - **LaunchDaemons, not LaunchAgents.** Every service Steading
   installs must survive the owner logging out, the machine
   rebooting, and power cuts. Per-user `LaunchAgents` fail this
-  requirement; `brew services` is explicitly rejected for the same
-  reason.
+  requirement, which is why `brew services` (which installs
+  per-user agents) is not used.
 - **Adopts existing Homebrew.** No parallel brew install, no
-  `_steading` user. Steading manages services within whatever brew
-  the owner already has.
+  dedicated `_steading` user. Steading manages services within
+  whatever Homebrew the owner already has. A service Steading
+  manages can be released back to manual management without
+  breaking it.
 - **One blessed implementation per service category.** No
   "Caddy or Nginx or Traefik" decision trees — the catalog is
-  deliberately curated.
+  deliberately curated so that integration is tight and the testing
+  surface is bounded.
 - **Owner decides policy, Steading warns.** Firewall rules, SSH
   exposure, port 25/80 — Steading never refuses an owner's choice,
-  but warns context-aware on footguns.
+  but surfaces context-aware warnings on footguns (port 25 on a
+  residential line, password SSH open to the internet, etc.).
+- **Credentials in the macOS Keychain.** When the owner supplies a
+  service credential during install, it goes to the system Keychain
+  under a named Steading entry. Steading keeps a list of what it has
+  stored so the opaque Keychain can be inspected. An encrypted
+  export/import path exists for migrating a server install to a new
+  Mac.

@@ -2,21 +2,23 @@
 
 This file is for AI coding agents (Claude Code, Cursor, and similar)
 working on this repo. Human-facing documentation lives in
-[README.md](README.md), [DESIGN.md](DESIGN.md), and
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Read those first — this
-file exists only to capture agent-specific operating rules that
-wouldn't belong in docs a human would read.
+[README.md](README.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Read those first — this file exists only to capture agent-specific
+operating rules that wouldn't belong in docs a human would read.
 
 ## Before you change anything
 
-1. Read [DESIGN.md](DESIGN.md) — the gold master for what Steading
-   is, is not, and why. Don't make scope decisions without
-   grounding them here.
-2. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the
-   code is laid out.
-3. If the user's request seems to conflict with DESIGN.md, ask. The
-   design doc is the authoritative answer to "should Steading do
-   X?" — amend it explicitly before code that contradicts it.
+1. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the code
+   is laid out, the privileged-helper model, the testing strategy,
+   and the architectural invariants that the rest of the codebase
+   depends on.
+2. Read [README.md](README.md) for the one-paragraph product pitch.
+3. If the user's request conflicts with an architectural invariant
+   (non-sandboxed, LaunchDaemons not LaunchAgents, adopts existing
+   brew, one blessed implementation per category, owner decides
+   policy, keychain-backed credentials) — ask the user before
+   changing code. Invariants are structural; they aren't up to an
+   agent to renegotiate.
 
 ## Hard rules
 

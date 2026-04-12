@@ -1,8 +1,8 @@
 import Foundation
 
-/// Dummy Services catalog for the PoC. Reflects the v1 list in
-/// DESIGN.md § Services catalog — one blessed implementation per
-/// category.
+/// Dummy Services catalog for the PoC. One blessed implementation
+/// per category — no "Caddy or Nginx" decision trees — so that
+/// integration stays tight and the test surface is bounded.
 enum ServiceCatalog {
     static let items: [CatalogItem] = [
         CatalogItem(

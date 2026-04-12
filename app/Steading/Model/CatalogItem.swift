@@ -2,8 +2,9 @@ import Foundation
 
 /// A single entry in one of Steading's three catalogs — services,
 /// webapps, or macOS built-ins. Dummy data for the PoC; real catalog
-/// entries will be loaded from per-item definition files (see
-/// DESIGN.md § Definition files).
+/// entries will be loaded from per-item definition files (schema
+/// TBD) so that adding a new service is dropping a file in rather
+/// than editing Swift.
 struct CatalogItem: Identifiable, Hashable, Sendable {
     enum Kind: String, Sendable, Hashable {
         case service

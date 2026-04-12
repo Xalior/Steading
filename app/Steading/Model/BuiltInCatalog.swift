@@ -2,7 +2,9 @@ import Foundation
 
 /// Dummy catalog of macOS built-in server facilities that Steading
 /// wraps rather than replaces — SMB, SSH, Firewall, Time Machine,
-/// and so on. Reflects DESIGN.md § Wraps macOS built-ins.
+/// Content Caching, Screen Sharing, and so on. These are GUI
+/// surfaces over existing native plumbing (`sharing`, `systemsetup`,
+/// `socketfilterfw`, `pmset`, etc.), not reimplementations.
 enum BuiltInCatalog {
     static let items: [CatalogItem] = [
         CatalogItem(

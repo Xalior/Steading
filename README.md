@@ -32,8 +32,6 @@ xcodebuild -project Steading.xcodeproj -scheme Steading \
 
 ## Further reading
 
-- [DESIGN.md](DESIGN.md) — product design (what Steading is and
-  isn't).
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the code is
   organised.
 - [app/README.md](app/README.md) — app build details.

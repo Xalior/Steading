@@ -1,9 +1,11 @@
 import Foundation
 
-/// Dummy Webapps catalog for the PoC. Reflects the v1 list in
-/// DESIGN.md § Webapps catalog. Webapps have no daemon of their own;
-/// they're files behind a Caddy virtual host served by shared
-/// infrastructure.
+/// Dummy Webapps catalog for the PoC. Webapps have no daemon of
+/// their own; they're files behind a Caddy virtual host served by
+/// shared infrastructure (PHP-FPM and, when needed, a shared
+/// database). Multiple webapps coexist freely — two MediaWikis on
+/// one Mac is legitimate, each with its own directory, its own
+/// vhost, and its own database.
 enum WebappCatalog {
     static let items: [CatalogItem] = [
         CatalogItem(
