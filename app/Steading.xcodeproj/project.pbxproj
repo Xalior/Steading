@@ -18,6 +18,7 @@
 		1C4F0835A7C272784210CBF2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7707938979911C8523D73059 /* ContentView.swift */; };
 		1ECA67F611AE2F6C1475362F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ABA7DFE5D12701CCFF57393A /* Assets.xcassets */; };
 		2387DF467AAFBCE2C3B4463D /* HostsFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFC848ED345ADD229D74A5A /* HostsFileWriter.swift */; };
+		2E9A18249FE13459D50CA5B9 /* PrivHelperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A1713AF56D19F115490A16 /* PrivHelperService.swift */; };
 		3398A120057E163AA6C00C38 /* HostsFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFC848ED345ADD229D74A5A /* HostsFileWriter.swift */; };
 		3F152B117F7523EACC1F2174 /* SteadingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7F24EC4CEA4DD4488FFA7D3 /* SteadingApp.swift */; };
 		5C2F5F90DF0D64C93A1123B0 /* WebappCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1607A01EF1A948C711D87CFC /* WebappCatalog.swift */; };
@@ -37,6 +38,7 @@
 		C11D86FFA26BB72DE065191C /* AppStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81F9C7A2DBF73EDA4A98A518 /* AppStateTests.swift */; };
 		CA898660CB4E27D094823695 /* HostsFileWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A384EE2CBFCF3CD0BF3BF127 /* HostsFileWriterTests.swift */; };
 		CADFD3BED81464CA0D745B1C /* BuiltInServiceRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE01FD58CA5CED026DC5AF1 /* BuiltInServiceRegistry.swift */; };
+		E77AC5212B5A9B36D0598DB9 /* XPCIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA635A3848267492662B980 /* XPCIntegrationTests.swift */; };
 		E7AAF54B7B276501030AC2EC /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A92531C471AFC497B95E816 /* OnboardingView.swift */; };
 		E89CE1926409C2113DE7F06C /* ServiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */; };
 		EB2C97840B93FBF7A5F4A358 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 455044AAFD76888EB755F58A /* SidebarView.swift */; };
@@ -93,6 +95,7 @@
 		0B1E7B0845CEB8241142969C /* BuiltInServiceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceDetailView.swift; sourceTree = "<group>"; };
 		10A1713AF56D19F115490A16 /* PrivHelperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperService.swift; sourceTree = "<group>"; };
 		1607A01EF1A948C711D87CFC /* WebappCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebappCatalog.swift; sourceTree = "<group>"; };
+		1AA635A3848267492662B980 /* XPCIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCIntegrationTests.swift; sourceTree = "<group>"; };
 		1C5B9FA877D00376140D115F /* Steading.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Steading.entitlements; sourceTree = "<group>"; };
 		1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewDetectorTests.swift; sourceTree = "<group>"; };
 		35D91110641303655AF49F7B /* PrivHelperClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperClient.swift; sourceTree = "<group>"; };
@@ -200,6 +203,7 @@
 				67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */,
 				A384EE2CBFCF3CD0BF3BF127 /* HostsFileWriterTests.swift */,
 				DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */,
+				1AA635A3848267492662B980 /* XPCIntegrationTests.swift */,
 			);
 			path = SteadingTests;
 			sourceTree = "<group>";
@@ -426,6 +430,8 @@
 				04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */,
 				CA898660CB4E27D094823695 /* HostsFileWriterTests.swift in Sources */,
 				B6922DDBE8E384BB1C266E7C /* PrivHelperAllowlistTests.swift in Sources */,
+				2E9A18249FE13459D50CA5B9 /* PrivHelperService.swift in Sources */,
+				E77AC5212B5A9B36D0598DB9 /* XPCIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -543,6 +549,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.xalior.SteadingTests;
 				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = STEADING_TEST_HOST;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Steading.app/Contents/MacOS/Steading";
 			};
 			name = Debug;
@@ -578,6 +585,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.xalior.SteadingTests;
 				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = STEADING_TEST_HOST;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Steading.app/Contents/MacOS/Steading";
 			};
 			name = Release;

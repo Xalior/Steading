@@ -1,6 +1,16 @@
 import Foundation
 import os.log
 
+// When this file is compiled into the SteadingTests target (so XPC
+// round-trip tests can stand up a real PrivHelperService behind an
+// anonymous listener), the protocol and Shared/ types come from the
+// Steading module rather than this target's own compilation. The
+// helper target itself compiles Shared/ directly and does not see
+// STEADING_TEST_HOST, so the import is a no-op there.
+#if STEADING_TEST_HOST
+@testable import Steading
+#endif
+
 /// Concrete implementation of `SteadingPrivHelperProtocol`. Runs as
 /// root; this is the code that actually spawns the allowlisted tools
 /// and performs the narrow set of file mutations exposed on the XPC

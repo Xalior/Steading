@@ -75,12 +75,38 @@ final class PrivHelperClient {
     ///
     /// See docs/ARCHITECTURE.md — "Mutual code-sign pinning" — for the
     /// threat model this closes.
-    private let helperRequirement =
+    static let helperRequirement =
         "identifier \"com.xalior.Steading.privhelper\" and anchor apple generic and " +
         "certificate 1[field.1.2.840.113635.100.6.2.1] /* exists */ and " +
         "certificate leaf[subject.OU] = \"M353B943AK\""
 
-    private init() {}
+    /// Produces the (unresumed, interface-unset) `NSXPCConnection` used
+    /// by `connect()`. Stored so tests can inject an in-process
+    /// anonymous-listener endpoint instead of the real launchd-managed
+    /// mach service. The default factory wires up the privileged mach
+    /// service lookup and pins the helper's code signature.
+    private let connectionFactory: () -> NSXPCConnection
+
+    private init() {
+        self.connectionFactory = {
+            let conn = NSXPCConnection(
+                machServiceName: SteadingPrivHelperMachServiceName,
+                options: .privileged
+            )
+            conn.setCodeSigningRequirement(PrivHelperClient.helperRequirement)
+            return conn
+        }
+    }
+
+    /// Designated initializer for tests. Production code uses the
+    /// `.shared` singleton which wires up the real launchd-privileged
+    /// mach service connection. Tests pass a factory that produces an
+    /// `NSXPCConnection(listenerEndpoint:)` pointed at an in-process
+    /// anonymous `NSXPCListener` — same client logic, same protocol
+    /// serialization, a test-owned service on the other end.
+    init(connectionFactory: @escaping () -> NSXPCConnection) {
+        self.connectionFactory = connectionFactory
+    }
 
     // MARK: - Registration
 
@@ -208,17 +234,12 @@ final class PrivHelperClient {
     private func connect() throws -> NSXPCConnection {
         if let connection { return connection }
 
-        // .privileged tells NSXPCConnection to look for the mach
-        // service in launchd's system domain (i.e. a LaunchDaemon),
-        // not a LaunchAgent.
-        let conn = NSXPCConnection(
-            machServiceName: SteadingPrivHelperMachServiceName,
-            options: .privileged
-        )
-        // Refuse to talk to anything on the other end of the mach
-        // service that isn't the real Steading helper. Closes the
-        // symmetric gap to the helper's own client verification.
-        conn.setCodeSigningRequirement(helperRequirement)
+        // The factory builds the raw transport (privileged mach
+        // service lookup in production, anonymous listener endpoint
+        // in tests) and sets any connection-level security like
+        // `setCodeSigningRequirement`. Everything below is the shared
+        // setup that's identical regardless of transport.
+        let conn = connectionFactory()
         conn.remoteObjectInterface = NSXPCInterface(with: SteadingPrivHelperProtocol.self)
         conn.invalidationHandler = { [weak self] in
             Task { @MainActor in

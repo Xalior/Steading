@@ -95,3 +95,11 @@ and hasn't merged yet.
   the new `HostsFileWriter` suite. Manual `/etc/hosts` write
   verification deferred to next at-desk session (requires the
   helper to be registered and the user to click Save in the UI).
+- 2026-04-12: added `XPCIntegrationTests` suite — 8 tests covering
+  end-to-end `PrivHelperClient` ↔ `PrivHelperService` round trips
+  via an anonymous `NSXPCListener`. Refactored `PrivHelperClient`
+  to accept an injected connection factory so tests wire it to an
+  in-process listener endpoint without touching launchd. Test
+  target now compiles `PrivHelperService.swift` directly (conditional
+  `@testable import Steading` guarded by `STEADING_TEST_HOST` flag).
+  Full suite: 63/63 passing.

@@ -73,6 +73,12 @@ targets:
     platform: macOS
     sources:
       - path: SteadingTests
+      # Compiled into the test bundle so XPCIntegrationTests can stand
+      # up a real PrivHelperService behind an anonymous NSXPCListener.
+      # The STEADING_TEST_HOST flag below switches on a conditional
+      # `@testable import Steading` inside the file so its bare-name
+      # references to Shared/ types resolve from the main module.
+      - path: SteadingPrivHelper/PrivHelperService.swift
     dependencies:
       - target: Steading
     settings:
@@ -80,3 +86,4 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.xalior.SteadingTests
         BUNDLE_LOADER: $(TEST_HOST)
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/Steading.app/Contents/MacOS/Steading
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: STEADING_TEST_HOST
