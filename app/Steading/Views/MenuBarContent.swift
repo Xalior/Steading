@@ -2,6 +2,8 @@ import SwiftUI
 import AppKit
 
 struct MenuBarContent: View {
+    @Environment(\.openWindow) private var openWindow
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
@@ -15,9 +17,8 @@ struct MenuBarContent: View {
             Divider()
 
             Button {
-                if let delegate = NSApp.delegate as? AppDelegate {
-                    delegate.showWindow()
-                }
+                openWindow(id: "main")
+                NSApp.activate(ignoringOtherApps: true)
             } label: {
                 Label("Open Steading…", systemImage: "macwindow")
                     .frame(maxWidth: .infinity, alignment: .leading)

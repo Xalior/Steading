@@ -15,6 +15,7 @@ struct SteadingApp: App {
                 }
             }
             .environment(appState)
+            .background(WindowBridge(appDelegate: appDelegate))
             .task {
                 await appState.refreshBrewStatus()
                 appState.refreshHelperStatus()
@@ -26,12 +27,6 @@ struct SteadingApp: App {
         .defaultSize(width: 1120, height: 720)
         .commands {
             CommandGroup(replacing: .newItem) { }
-            CommandGroup(after: .appInfo) {
-                Button("Check for Homebrew") {
-                    Task { await appState.refreshBrewStatus() }
-                }
-                .keyboardShortcut("r", modifiers: .command)
-            }
         }
 
         MenuBarExtra("Steading", systemImage: "house.fill") {
@@ -39,5 +34,22 @@ struct SteadingApp: App {
                 .environment(appState)
         }
         .menuBarExtraStyle(.window)
+    }
+}
+
+/// Invisible bridge that captures SwiftUI's `openWindow` environment
+/// action and hands it to the AppDelegate so the dock-click reopen
+/// path (`applicationShouldHandleReopen`) can recreate the Window
+/// scene after the user closes it with the red button.
+private struct WindowBridge: View {
+    @Environment(\.openWindow) private var openWindow
+    let appDelegate: AppDelegate
+
+    var body: some View {
+        Color.clear.onAppear {
+            appDelegate.openMainWindow = { [openWindow] in
+                openWindow(id: "main")
+            }
+        }
     }
 }
