@@ -7,6 +7,8 @@
 [![Arch: Apple Silicon](https://img.shields.io/badge/Arch-Apple%20Silicon-black.svg)]()
 [![Swift 6.2](https://img.shields.io/badge/Swift-6.2-orange.svg)]()
 
+![Steading preview](docs/preview.png)
+
 ---
 
 ## ✨ What you can run
