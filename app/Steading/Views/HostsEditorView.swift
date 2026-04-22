@@ -124,7 +124,7 @@ struct HostsEditorView: View {
                     Text("Save")
                 }
             }
-            .keyboardShortcut(.defaultAction)
+            .keyboardShortcut("s", modifiers: .command)
             .disabled(isSaving || status != .loaded || !isDirty)
         }
         .padding(.horizontal, 20)
