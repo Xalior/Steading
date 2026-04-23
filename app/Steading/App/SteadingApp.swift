@@ -4,6 +4,7 @@ import SwiftUI
 struct SteadingApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var appState = AppState()
+    @State private var preferences = PreferencesStore()
 
     var body: some Scene {
         Window("Steading", id: "main") {
@@ -15,6 +16,7 @@ struct SteadingApp: App {
                 }
             }
             .environment(appState)
+            .environment(preferences)
             .background(WindowBridge(appDelegate: appDelegate))
             .task {
                 await appState.refreshBrewStatus()
@@ -32,6 +34,11 @@ struct SteadingApp: App {
             }
         }
 
+        Settings {
+            PreferencesView()
+                .environment(preferences)
+        }
+
         Window("Edit /etc/hosts", id: "hosts-editor") {
             HostsEditorView()
                 .environment(appState)
@@ -42,6 +49,7 @@ struct SteadingApp: App {
         MenuBarExtra("Steading", systemImage: "house.fill") {
             MenuBarContent()
                 .environment(appState)
+                .environment(preferences)
         }
         .menuBarExtraStyle(.window)
     }
