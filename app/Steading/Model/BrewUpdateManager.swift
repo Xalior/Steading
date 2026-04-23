@@ -36,15 +36,23 @@ final class BrewUpdateManager {
         case adminAccessDenied
     }
 
-    /// Dependency boundary for the sudo pre-warm step. Default spawns
-    /// `/usr/bin/sudo -v -S` with the password on stdin; tests inject
-    /// a substitute returning canned results.
-    typealias PreWarmer = @Sendable (_ password: String) async -> Bool
-
     /// Dependency boundary for collecting the password from the UI.
     /// Returning `nil` signals the user dismissed the modal — apply
     /// aborts before spawning brew.
     typealias PasswordProvider = @Sendable () async -> String?
+
+    /// Dependency boundary for locating the brew binary. Default
+    /// walks `BrewDetector.standardSearchPaths`; tests inject a path
+    /// to a fake brew so real brew doesn't run.
+    typealias BrewPathResolver = @Sendable () -> String?
+
+    /// Dependency boundary for the askpass helper script. The
+    /// returned URL is passed to brew via `SUDO_ASKPASS`. Default
+    /// creates a minimal shell script that echoes
+    /// `$STEADING_SUDO_PASSWORD`; the full stage-2 design will
+    /// replace this with a signed helper that calls back into the
+    /// Steading GUI via XPC.
+    typealias AskpassLocator = @Sendable () -> URL?
 
     /// Enablement decisions for the Brew Package Manager window's
     /// controls. Pure — derived from state and counts.
@@ -110,7 +118,8 @@ final class BrewUpdateManager {
     private let sleep: Sleeper
     private let clock: @Sendable () -> Date
     private let notifier: BannerNotifier
-    private let preWarmer: PreWarmer
+    private let brewPathResolver: BrewPathResolver
+    private let askpassLocator: AskpassLocator
     /// Count from the most recent successful settlement. Dock badge
     /// and menu bar label derive from this so they don't flicker off
     /// while a check is in flight.
@@ -127,13 +136,15 @@ final class BrewUpdateManager {
          sleep: @escaping Sleeper = { try await Task.sleep(for: $0) },
          clock: @escaping @Sendable () -> Date = { Date() },
          notifier: BannerNotifier = BrewUpdateManager.defaultNotifier,
-         preWarmer: @escaping PreWarmer = BrewUpdateManager.defaultPreWarmer) {
-        self.preferences = preferences
-        self.runner      = runner
-        self.sleep       = sleep
-        self.clock       = clock
-        self.notifier    = notifier
-        self.preWarmer   = preWarmer
+         brewPathResolver: @escaping BrewPathResolver = BrewUpdateManager.defaultBrewPathResolver,
+         askpassLocator: @escaping AskpassLocator = BrewUpdateManager.defaultAskpassLocator) {
+        self.preferences       = preferences
+        self.runner            = runner
+        self.sleep             = sleep
+        self.clock             = clock
+        self.notifier          = notifier
+        self.brewPathResolver  = brewPathResolver
+        self.askpassLocator    = askpassLocator
         self.lastNotifyBannerPref = preferences.notifySystemBanner
     }
 
@@ -321,12 +332,13 @@ final class BrewUpdateManager {
     // MARK: - Apply pipeline
 
     /// Kick off `brew upgrade <packages…>`, streaming output into
-    /// `applyLog`. Prepends the sudo pre-warm step: `passwordProvider`
-    /// collects the user's password (or returns `nil` to cancel);
-    /// `preWarmer` calls `sudo -v -S` with the password. Three wrong
-    /// passwords in a row surrender with `.adminAccessDenied`. Modal
-    /// cancel surrenders with `.modalCancelled`. Silently no-ops if
-    /// the manager is already applying or currently checking.
+    /// `applyLog`. Stage 1 askpass path: collect the password from
+    /// the UI via `passwordProvider` (nil → `.modalCancelled`), set
+    /// `SUDO_ASKPASS` + `STEADING_SUDO_PASSWORD` on brew's env, and
+    /// spawn. brew's internal sudo will hit "no tty" and auto-invoke
+    /// the askpass helper, which prints the password from the env.
+    /// Silently no-ops if the manager is already applying or
+    /// currently checking.
     func apply(_ packages: [OutdatedPackage],
                passwordProvider: @escaping PasswordProvider) {
         guard applyTask == nil, checkTask == nil else { return }
@@ -339,35 +351,13 @@ final class BrewUpdateManager {
         isPreWarming = true
         applyTask = Task { [weak self] in
             guard let self else { return }
-
-            // Pre-warm retry: up to 3 password attempts.
-            let maxAttempts = 3
-            var warmed = false
-            for attempt in 1...maxAttempts {
-                guard let password = await passwordProvider() else {
-                    self.isPreWarming = false
-                    self.finishPreWarmAbort(outcome: .modalCancelled)
-                    return
-                }
-                let ok = await self.preWarmer(password)
-                // Password is local to this loop body; it goes out of
-                // scope (and is ARC-released) as soon as this iteration
-                // finishes — we neither copy it into self nor pass it
-                // further than the preWarmer boundary.
-                if ok {
-                    warmed = true
-                    break
-                }
-                if attempt == maxAttempts {
-                    self.isPreWarming = false
-                    self.finishPreWarmAbort(outcome: .adminAccessDenied)
-                    return
-                }
+            guard let password = await passwordProvider() else {
+                self.isPreWarming = false
+                self.finishPreWarmAbort(outcome: .modalCancelled)
+                return
             }
             self.isPreWarming = false
-            guard warmed else { return }
-
-            await self.runBrewUpgrade(packages: packages)
+            await self.runBrewUpgrade(packages: packages, password: password)
         }
     }
 
@@ -388,15 +378,26 @@ final class BrewUpdateManager {
         }
     }
 
-    private func runBrewUpgrade(packages: [OutdatedPackage]) async {
+    private func runBrewUpgrade(packages: [OutdatedPackage], password: String) async {
         let argv = Self.brewUpgradeArgv(for: packages)
-        guard let brewPath = BrewDetector.standardSearchPaths.first(where: {
-            FileManager.default.isExecutableFile(atPath: $0)
-        }) else {
+        guard let brewPath = brewPathResolver() else {
             finishApply(outcome: .spawnFailed(reason: "no brew on disk"))
             return
         }
-        let handle = StreamingProcessRunner.run(executable: brewPath, arguments: argv)
+        guard let askpassURL = askpassLocator() else {
+            finishApply(outcome: .spawnFailed(reason: "askpass helper unavailable"))
+            return
+        }
+
+        var env = ProcessInfo.processInfo.environment
+        env["SUDO_ASKPASS"] = askpassURL.path
+        env["STEADING_SUDO_PASSWORD"] = password
+
+        let handle = StreamingProcessRunner.run(
+            executable: brewPath,
+            arguments: argv,
+            environment: env
+        )
         applyHandle = handle
 
         var outcome: ApplyOutcome = .cancelled
@@ -547,35 +548,38 @@ final class BrewUpdateManager {
         }
     )
 
-    // MARK: - Default pre-warmer
+    // MARK: - Default resolvers
 
-    /// Production pre-warmer: spawns `/usr/bin/sudo -v -S`, writes the
-    /// password to its stdin, and returns `true` on exit 0. Password
-    /// is consumed by the subprocess and discarded; nothing inside
-    /// this closure keeps a copy.
-    nonisolated static let defaultPreWarmer: PreWarmer = { password in
-        await Task.detached { () -> Bool in
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
-            process.arguments = ["-v", "-S"]
-            let inPipe = Pipe()
-            let outPipe = Pipe()
-            let errPipe = Pipe()
-            process.standardInput  = inPipe
-            process.standardOutput = outPipe
-            process.standardError  = errPipe
-            do {
-                try process.run()
-            } catch {
-                return false
-            }
-            if let data = (password + "\n").data(using: .utf8) {
-                try? inPipe.fileHandleForWriting.write(contentsOf: data)
-            }
-            try? inPipe.fileHandleForWriting.close()
-            process.waitUntilExit()
-            return process.terminationStatus == 0
-        }.value
+    nonisolated static let defaultBrewPathResolver: BrewPathResolver = {
+        BrewDetector.standardSearchPaths.first(where: {
+            FileManager.default.isExecutableFile(atPath: $0)
+        })
+    }
+
+    /// Stage-1 askpass locator: materialises a minimal shell script
+    /// that echoes `$STEADING_SUDO_PASSWORD` at a stable per-user
+    /// path and returns its URL. Idempotent — the script is only
+    /// written if missing. Stage 2 will replace this with a bundled
+    /// signed helper that IPCs back into the GUI.
+    nonisolated static let defaultAskpassLocator: AskpassLocator = {
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory,
+                                           in: .userDomainMask).first!
+            .appendingPathComponent("Steading", isDirectory: true)
+        try? FileManager.default.createDirectory(
+            at: dir, withIntermediateDirectories: true
+        )
+        let url = dir.appendingPathComponent("steading-askpass-stage1.sh")
+        let body = """
+        #!/bin/sh
+        printf '%s\\n' "$STEADING_SUDO_PASSWORD"
+        """
+        if !FileManager.default.fileExists(atPath: url.path) {
+            try? body.write(to: url, atomically: true, encoding: .utf8)
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o700], ofItemAtPath: url.path
+            )
+        }
+        return url
     }
 
     // MARK: - Default runner

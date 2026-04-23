@@ -34,14 +34,21 @@ struct StreamingProcessRunner {
 
     /// Spawn `executable` with `arguments` and return a `Handle` whose
     /// `events` stream carries output + terminal events. Call
-    /// `handle.cancel()` to terminate the subprocess.
-    static func run(executable: String, arguments: [String]) -> Handle {
+    /// `handle.cancel()` to terminate the subprocess. `environment`,
+    /// when supplied, replaces the child's env wholesale; `nil`
+    /// inherits the current process's env.
+    static func run(executable: String,
+                    arguments: [String],
+                    environment: [String: String]? = nil) -> Handle {
         let controller = Controller()
 
         let stream = AsyncStream<Event> { continuation in
             let process = Process()
             process.executableURL = URL(fileURLWithPath: executable)
             process.arguments = arguments
+            if let environment {
+                process.environment = environment
+            }
             let outPipe = Pipe()
             let errPipe = Pipe()
             process.standardOutput = outPipe
