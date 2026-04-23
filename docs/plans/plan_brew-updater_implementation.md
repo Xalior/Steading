@@ -59,13 +59,17 @@ updated continuously.
     - [x] Phase 3 (code): StreamingProcessRunner, Apply pipeline,
           BrewPackageManagerView, Tools menu entry, close/quit warning.
           Automated SCs green. Manual SCs deferred.
-    - [x] Phase 4 (code): pre-implementation gate verified on dev box
-          (sudo -v -S warm → sudo -n true no-tty child: exit 0).
-          PasswordProvider + PreWarmer boundaries on apply(_:),
-          password modal in the Brew Package Manager window, three-
-          strikes admin-access-denied abort, modal-cancel abort,
-          Mirror-based password-not-retained test. Automated SCs
-          green. Manual SCs deferred.
+    - [x] Phase 4 (code): initial pre-warm PoC shipped but broke at
+          end-to-end test — sudo timestamp did not propagate to
+          brew's internal sudo call in Steading's no-tty context.
+          Redesigned in-session to `SUDO_ASKPASS`-based delivery
+          (stage 1 → stage 2). Stage 2 is the production shape:
+          signed `steading-askpass` CLI bundled in Steading.app,
+          connects to the main app over a Unix socket with mutual
+          audit-token codesign pinning, surfaces the password modal
+          on demand only when sudo actually needs it. Verified
+          end-to-end: real cask upgrade succeeded. Security test
+          ("insecure peer DENY") confirms codesign rejection works.
     - [x] Phase 5 (code): dock badge wiring, MenuBarLabel custom view,
           UNUserNotificationCenter authorisation at launch, banner post
           on settle + remove on drop-to-zero + remove on pref-off,
@@ -97,6 +101,18 @@ updated continuously.
   `make -C app build/test` green (116 tests, 15 suites). All
   non-blocked phases' automated SCs met; sprint awaits manual
   verification and a Phase 4 resolution.
+- **2026-04-23** — Phase 4 stage 2 landed and verified end-to-end.
+  Real-cask upgrade (zulu@17) completed through Steading: brew
+  reached its internal sudo calls, sudo invoked the bundled
+  `steading-askpass` helper, which IPC'd to the GUI over the
+  mutual-codesign-pinned Unix socket; the modal surfaced on-demand,
+  the user entered their real password, sudo authenticated, the
+  cask upgraded cleanly. Tests green (120 tests, 17 suites)
+  including the `insecure peer is rejected with DENY` regression
+  that pins codesign validation. Phase 4 moves from "PoC with
+  documented limitation" to "production-shape implementation".
+  Sprint awaits the remaining manual Phase 1/2/3/5 verification
+  passes.
 - **2026-04-23** — User ran the Phase 4 pre-implementation gate probe
   (`/tmp/steading-sudo-probe.swift`) and confirmed propagation works.
   Phase 4 code landed: PasswordProvider + PreWarmer boundaries on
