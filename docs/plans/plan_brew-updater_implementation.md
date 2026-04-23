@@ -50,7 +50,9 @@ updated continuously.
 ## Tasks
 
 - [ ] Sprint 1: brew-updater end-to-end
-    - [ ] Phase 1: Preferences scene + settings store + Makefile
+    - [x] Phase 1 (code): Makefile, PreferencesStore, PreferencesView,
+          Settings scene — automated SCs green. Manual SCs deferred to
+          sprint-end.
     - [ ] Phase 2: Check pipeline, singleton manager, bottom status strip
     - [ ] Phase 3: Brew Package Manager window + Apply (non-sudo path)
     - [ ] Phase 4: sudo-during-upgrade PoC (gated by in-stream
@@ -62,6 +64,8 @@ updated continuously.
 - **2026-04-23** — Branch cut from `main` at 8c2e98a; baseline test suite
   green (63 tests). Tracker sections layered onto the existing plan
   doc per repo convention. Sprint 1 opened. Starting Phase 1.
+- **2026-04-23** — Phase 1 code landed. `make -C app build/test` green
+  (71 tests, 7 suites; +8 prefs tests, +1 suite). Starting Phase 2.
 
 ## Decisions & Notes
 
