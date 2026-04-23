@@ -1,12 +1,73 @@
 ---
-status: Ready
+status: In Progress
 source: docs/discovery/discovery_brew-updater.md
 ---
 
-# Plan: brew-updater
+# Plan + WIP tracker: brew-updater
 
-**Status:** Ready
+**Status:** In Progress
+**Branch:** `feature/brew-updater`
 **Source:** [docs/discovery/discovery_brew-updater.md](../discovery/discovery_brew-updater.md)
+
+This file is both the plan (authoritative scope below, from "## Overview"
+onward — unchanged from the doc that was committed in `dce25b7`) and the
+living WIP tracker for the feature branch, matching the repo convention
+set by [plan_hosts-file-editor_implementation.md](./plan_hosts-file-editor_implementation.md).
+Plan sections are immutable for this session; tracker sections below are
+updated continuously.
+
+## Preflight Decisions
+
+- **Branch:** `feature/brew-updater`, cut from `main` at 8c2e98a.
+- **Baseline verification:** `xcodebuild -project Steading.xcodeproj
+  -scheme Steading -configuration Debug -destination
+  'platform=macOS,arch=arm64' -enableCodeCoverage NO test` against `main`
+  — TEST SUCCEEDED, 63 tests across 6 suites (2026-04-23).
+- **Tracker layout:** `single` — one tracker (this file), one sprint
+  covering all 5 phases (explicit user election). Implication: all manual
+  verification steps across Phases 1–5 are performed at the end of the
+  sprint, not at per-phase boundaries. The Phase 4 pre-implementation
+  sudo-propagation gate is plan-instructed and is honoured in-stream
+  before any Phase 4 code is written — it is not a sprint boundary.
+- **Plan-deferred decisions:** none. The plan uses "implementer's
+  discretion" for several shape choices (preferences store mechanism,
+  parser signature, menu-bar label visual composition, list-kind
+  rendering); those are intentional implementation-time calls, not
+  deferred choices to resolve upfront.
+
+## Sprints
+
+### Sprint 1: brew-updater end-to-end
+
+- **Covers:** Phases 1–5 in full.
+- **Success Criteria:** the union of each phase's Automated and Manual
+  criteria as written below — no additions, no substitutions.
+  Phase-level cumulative gates are checked as each phase's last code
+  lands; the sprint does not complete until every phase's criteria are
+  verified.
+- **Status:** not started
+
+## Tasks
+
+- [ ] Sprint 1: brew-updater end-to-end
+    - [ ] Phase 1: Preferences scene + settings store + Makefile
+    - [ ] Phase 2: Check pipeline, singleton manager, bottom status strip
+    - [ ] Phase 3: Brew Package Manager window + Apply (non-sudo path)
+    - [ ] Phase 4: sudo-during-upgrade PoC (gated by in-stream
+          pre-implementation verification)
+    - [ ] Phase 5: dock badge, menu bar label, system banner
+
+## Progress Log
+
+## Decisions & Notes
+
+## Blockers
+
+## Commits
+
+---
+
+# Plan (authoritative)
 
 ## Overview
 
