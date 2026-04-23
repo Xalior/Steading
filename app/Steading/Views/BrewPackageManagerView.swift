@@ -9,6 +9,14 @@ struct BrewPackageManagerView: View {
     @State private var detailsShown: Bool = false
     @State private var closeWarning: CloseReason?
 
+    // Password modal state — lives only for the duration of the
+    // Apply flow. `passwordInput` is cleared after each submission.
+    @State private var passwordModalVisible = false
+    @State private var passwordInput = ""
+    @State private var passwordAttempt = 1
+    @State private var passwordError: String?
+    @State private var passwordContinuation: CheckedContinuation<String?, Never>?
+
     /// What triggered the close attempt — drives the Cancel-and-Close
     /// handler's follow-up action (close the window, quit the app, or
     /// just return to the running window).
@@ -66,6 +74,14 @@ struct BrewPackageManagerView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .steadingAppQuitDuringApply)) { _ in
             closeWarning = .quitApp
+        }
+        .sheet(isPresented: $passwordModalVisible) {
+            passwordModal
+        }
+        .onChange(of: manager.isPreWarming) { _, isPreWarming in
+            if !isPreWarming {
+                passwordModalVisible = false
+            }
         }
     }
 
@@ -172,10 +188,7 @@ struct BrewPackageManagerView: View {
                 Button("Cancel", role: .destructive) { manager.cancelApply() }
             }
 
-            Button("Apply") {
-                let toApply = manager.outdated.filter { marked.contains($0.name) }
-                manager.apply(toApply)
-            }
+            Button("Apply") { startApply() }
             .keyboardShortcut(.defaultAction)
             .disabled(!buttons.applyEnabled)
         }
@@ -237,7 +250,89 @@ struct BrewPackageManagerView: View {
         case .spawnFailed(let reason):
             Label("Could not start brew: \(reason)", systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
+        case .modalCancelled:
+            Label("Upgrade canceled.", systemImage: "stop.circle")
+                .foregroundStyle(.secondary)
+        case .adminAccessDenied:
+            Label("Administrator access denied.", systemImage: "lock.slash")
+                .foregroundStyle(.red)
         }
+    }
+
+    // MARK: - Apply + password modal
+
+    private func startApply() {
+        let toApply = manager.outdated.filter { marked.contains($0.name) }
+        guard BrewUpdateManager.shouldPromptForPassword(markedPackages: toApply) else { return }
+
+        passwordAttempt = 1
+        passwordError = nil
+        passwordInput = ""
+        passwordModalVisible = true
+
+        let counter = AttemptBox()
+        manager.apply(toApply, passwordProvider: { @MainActor in
+            let n = await counter.next()
+            if n > 1 { passwordError = "Password incorrect." }
+            passwordInput = ""
+            passwordAttempt = n
+            return await withCheckedContinuation { (cont: CheckedContinuation<String?, Never>) in
+                passwordContinuation = cont
+            }
+        })
+    }
+
+    private func submitPassword() {
+        let value = passwordInput
+        passwordInput = ""
+        passwordContinuation?.resume(returning: value)
+        passwordContinuation = nil
+        // Optimistically bump attempt; manager may call provider again
+        // on a wrong password, and the .onChange watcher reconciles.
+    }
+
+    private func cancelPassword() {
+        passwordInput = ""
+        passwordError = nil
+        passwordContinuation?.resume(returning: nil)
+        passwordContinuation = nil
+        passwordModalVisible = false
+    }
+
+    @ViewBuilder
+    private var passwordModal: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Administrator password required")
+                .font(.headline)
+            Text("Some upgrades may need administrator access. Your password is used once and not stored.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            SecureField("Password", text: $passwordInput)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { submitPassword() }
+
+            if let error = passwordError {
+                Text(error)
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
+
+            Text("Attempt \(passwordAttempt) of 3")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack {
+                Spacer()
+                Button("Cancel", role: .cancel) { cancelPassword() }
+                Button("Continue") { submitPassword() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(passwordInput.isEmpty)
+            }
+        }
+        .padding(20)
+        .frame(width: 380)
     }
 }
 
@@ -296,4 +391,15 @@ extension Notification.Name {
     /// to raise the quit warning dialog.
     static let steadingAppQuitDuringApply =
         Notification.Name("com.xalior.Steading.AppQuitDuringApply")
+}
+
+/// Lives for the duration of one apply call; tracks how many times
+/// the password provider has been invoked so the UI can display the
+/// current attempt.
+private actor AttemptBox {
+    private var count = 0
+    func next() -> Int {
+        count += 1
+        return count
+    }
 }

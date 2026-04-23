@@ -30,7 +30,21 @@ final class BrewUpdateManager {
         case failed(exitCode: Int32)
         case cancelled
         case spawnFailed(reason: String)
+        /// User dismissed the password modal before brew ran.
+        case modalCancelled
+        /// Three wrong passwords in a row; apply aborted before brew ran.
+        case adminAccessDenied
     }
+
+    /// Dependency boundary for the sudo pre-warm step. Default spawns
+    /// `/usr/bin/sudo -v -S` with the password on stdin; tests inject
+    /// a substitute returning canned results.
+    typealias PreWarmer = @Sendable (_ password: String) async -> Bool
+
+    /// Dependency boundary for collecting the password from the UI.
+    /// Returning `nil` signals the user dismissed the modal — apply
+    /// aborts before spawning brew.
+    typealias PasswordProvider = @Sendable () async -> String?
 
     /// Enablement decisions for the Brew Package Manager window's
     /// controls. Pure — derived from state and counts.
@@ -85,11 +99,18 @@ final class BrewUpdateManager {
     /// fresh check begins.
     private(set) var recentApplyOutcome: ApplyOutcome?
 
+    /// `true` while the pre-warm retry loop is collecting or
+    /// validating passwords; `false` once the brew subprocess is
+    /// running or the apply has aborted. The Brew Package Manager
+    /// window binds its password modal visibility to this.
+    private(set) var isPreWarming: Bool = false
+
     private let preferences: PreferencesStore
     private let runner: Runner
     private let sleep: Sleeper
     private let clock: @Sendable () -> Date
     private let notifier: BannerNotifier
+    private let preWarmer: PreWarmer
     /// Count from the most recent successful settlement. Dock badge
     /// and menu bar label derive from this so they don't flicker off
     /// while a check is in flight.
@@ -105,12 +126,14 @@ final class BrewUpdateManager {
          runner: @escaping Runner = BrewUpdateManager.defaultRunner,
          sleep: @escaping Sleeper = { try await Task.sleep(for: $0) },
          clock: @escaping @Sendable () -> Date = { Date() },
-         notifier: BannerNotifier = BrewUpdateManager.defaultNotifier) {
+         notifier: BannerNotifier = BrewUpdateManager.defaultNotifier,
+         preWarmer: @escaping PreWarmer = BrewUpdateManager.defaultPreWarmer) {
         self.preferences = preferences
         self.runner      = runner
         self.sleep       = sleep
         self.clock       = clock
         self.notifier    = notifier
+        self.preWarmer   = preWarmer
         self.lastNotifyBannerPref = preferences.notifySystemBanner
     }
 
@@ -298,11 +321,14 @@ final class BrewUpdateManager {
     // MARK: - Apply pipeline
 
     /// Kick off `brew upgrade <packages…>`, streaming output into
-    /// `applyLog`. Silently no-ops if the manager is already applying
-    /// or currently checking. On completion (success, failure, or
-    /// cancel) a fresh check is scheduled so the list reflects the
-    /// post-upgrade reality.
-    func apply(_ packages: [OutdatedPackage]) {
+    /// `applyLog`. Prepends the sudo pre-warm step: `passwordProvider`
+    /// collects the user's password (or returns `nil` to cancel);
+    /// `preWarmer` calls `sudo -v -S` with the password. Three wrong
+    /// passwords in a row surrender with `.adminAccessDenied`. Modal
+    /// cancel surrenders with `.modalCancelled`. Silently no-ops if
+    /// the manager is already applying or currently checking.
+    func apply(_ packages: [OutdatedPackage],
+               passwordProvider: @escaping PasswordProvider) {
         guard applyTask == nil, checkTask == nil else { return }
         scheduledTask?.cancel()
         scheduledTask = nil
@@ -310,35 +336,84 @@ final class BrewUpdateManager {
         recentApplyOutcome = nil
         state = .applying
 
+        isPreWarming = true
+        applyTask = Task { [weak self] in
+            guard let self else { return }
+
+            // Pre-warm retry: up to 3 password attempts.
+            let maxAttempts = 3
+            var warmed = false
+            for attempt in 1...maxAttempts {
+                guard let password = await passwordProvider() else {
+                    self.isPreWarming = false
+                    self.finishPreWarmAbort(outcome: .modalCancelled)
+                    return
+                }
+                let ok = await self.preWarmer(password)
+                // Password is local to this loop body; it goes out of
+                // scope (and is ARC-released) as soon as this iteration
+                // finishes — we neither copy it into self nor pass it
+                // further than the preWarmer boundary.
+                if ok {
+                    warmed = true
+                    break
+                }
+                if attempt == maxAttempts {
+                    self.isPreWarming = false
+                    self.finishPreWarmAbort(outcome: .adminAccessDenied)
+                    return
+                }
+            }
+            self.isPreWarming = false
+            guard warmed else { return }
+
+            await self.runBrewUpgrade(packages: packages)
+        }
+    }
+
+    private func finishPreWarmAbort(outcome: ApplyOutcome) {
+        applyTask = nil
+        recentApplyOutcome = outcome
+        state = .failed(message: Self.applyFailureMessage(for: outcome))
+    }
+
+    private static func applyFailureMessage(for outcome: ApplyOutcome) -> String {
+        switch outcome {
+        case .modalCancelled:     return "upgrade cancelled"
+        case .adminAccessDenied:  return "administrator access denied"
+        case .spawnFailed(let r): return r
+        case .failed(let code):   return "brew upgrade exited \(code)"
+        case .cancelled:          return "upgrade cancelled"
+        case .success:            return ""
+        }
+    }
+
+    private func runBrewUpgrade(packages: [OutdatedPackage]) async {
         let argv = Self.brewUpgradeArgv(for: packages)
         guard let brewPath = BrewDetector.standardSearchPaths.first(where: {
             FileManager.default.isExecutableFile(atPath: $0)
         }) else {
-            recentApplyOutcome = .spawnFailed(reason: "no brew on disk")
-            state = .failed(message: "brew not available")
+            finishApply(outcome: .spawnFailed(reason: "no brew on disk"))
             return
         }
         let handle = StreamingProcessRunner.run(executable: brewPath, arguments: argv)
         applyHandle = handle
 
-        applyTask = Task { [weak self] in
-            var outcome: ApplyOutcome = .cancelled
-            for await event in handle.events {
-                guard let self else { return }
-                switch event {
-                case .output(_, let data):
-                    let piece = String(data: data, encoding: .utf8) ?? ""
-                    self.appendLog(piece)
-                case .exited(let code):
-                    outcome = (code == 0) ? .success : .failed(exitCode: code)
-                case .cancelled:
-                    outcome = .cancelled
-                case .failed(let reason):
-                    outcome = .spawnFailed(reason: reason)
-                }
+        var outcome: ApplyOutcome = .cancelled
+        for await event in handle.events {
+            switch event {
+            case .output(_, let data):
+                let piece = String(data: data, encoding: .utf8) ?? ""
+                self.appendLog(piece)
+            case .exited(let code):
+                outcome = (code == 0) ? .success : .failed(exitCode: code)
+            case .cancelled:
+                outcome = .cancelled
+            case .failed(let reason):
+                outcome = .spawnFailed(reason: reason)
             }
-            self?.finishApply(outcome: outcome)
         }
+        finishApply(outcome: outcome)
     }
 
     /// Cancel an in-flight Apply by sending SIGTERM → SIGKILL to brew.
@@ -388,6 +463,13 @@ final class BrewUpdateManager {
     /// characters are fine because Process does not go through a shell.
     nonisolated static func brewUpgradeArgv(for packages: [OutdatedPackage]) -> [String] {
         ["upgrade"] + packages.map(\.name)
+    }
+
+    /// Phase 4 scaffolds an always-true prompt decision so later
+    /// phases can detect "no sudo needed" and skip the modal. For
+    /// now: prompt every Apply regardless of what's marked.
+    nonisolated static func shouldPromptForPassword(markedPackages: [OutdatedPackage]) -> Bool {
+        true
     }
 
     // MARK: - Notification surface (pure)
@@ -464,6 +546,37 @@ final class BrewUpdateManager {
             )
         }
     )
+
+    // MARK: - Default pre-warmer
+
+    /// Production pre-warmer: spawns `/usr/bin/sudo -v -S`, writes the
+    /// password to its stdin, and returns `true` on exit 0. Password
+    /// is consumed by the subprocess and discarded; nothing inside
+    /// this closure keeps a copy.
+    nonisolated static let defaultPreWarmer: PreWarmer = { password in
+        await Task.detached { () -> Bool in
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
+            process.arguments = ["-v", "-S"]
+            let inPipe = Pipe()
+            let outPipe = Pipe()
+            let errPipe = Pipe()
+            process.standardInput  = inPipe
+            process.standardOutput = outPipe
+            process.standardError  = errPipe
+            do {
+                try process.run()
+            } catch {
+                return false
+            }
+            if let data = (password + "\n").data(using: .utf8) {
+                try? inPipe.fileHandleForWriting.write(contentsOf: data)
+            }
+            try? inPipe.fileHandleForWriting.close()
+            process.waitUntilExit()
+            return process.terminationStatus == 0
+        }.value
+    }
 
     // MARK: - Default runner
 
