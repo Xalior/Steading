@@ -26,6 +26,9 @@ struct SteadingApp: App {
             .environment(preferences)
             .environment(brewUpdates)
             .background(WindowBridge(appDelegate: appDelegate))
+            .background(NotificationSurfaceController()
+                .environment(brewUpdates)
+                .environment(preferences))
             .task {
                 await appState.refreshBrewStatus()
                 appState.refreshHelperStatus()
@@ -63,9 +66,13 @@ struct SteadingApp: App {
         .windowStyle(.titleBar)
         .defaultSize(width: 720, height: 520)
 
-        MenuBarExtra("Steading", systemImage: "house.fill") {
+        MenuBarExtra {
             MenuBarContent()
                 .environment(appState)
+                .environment(preferences)
+        } label: {
+            MenuBarLabel()
+                .environment(brewUpdates)
                 .environment(preferences)
         }
         .menuBarExtraStyle(.window)
@@ -101,6 +108,9 @@ private struct WindowBridge: View {
         Color.clear.onAppear {
             appDelegate.openMainWindow = { [openWindow] in
                 openWindow(id: "main")
+            }
+            appDelegate.openBrewPackageManager = { [openWindow] in
+                openWindow(id: "brew-package-manager")
             }
         }
     }

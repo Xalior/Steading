@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UserNotifications
 
 /// Owns the brew-updater check pipeline. One instance is created at
 /// app launch and handed to views via the environment. The manager is
@@ -58,6 +59,16 @@ final class BrewUpdateManager {
     typealias Runner = @Sendable (_ arguments: [String]) async -> RunResult
     typealias Sleeper = @Sendable (_ duration: Duration) async throws -> Void
 
+    /// Dependency boundary for the system-notification surface. The
+    /// production implementation (`defaultNotifier`) hits
+    /// `UNUserNotificationCenter.current()`; tests supply a no-op or
+    /// accumulator so the real settlement code path runs against a
+    /// controlled substitute.
+    struct BannerNotifier: Sendable {
+        var post: @Sendable (_ count: Int) -> Void
+        var removeDelivered: @Sendable () -> Void
+    }
+
     /// Max total attempts per check chain: initial + 4 retries = 5.
     static let maxAttempts = 5
 
@@ -78,6 +89,12 @@ final class BrewUpdateManager {
     private let runner: Runner
     private let sleep: Sleeper
     private let clock: @Sendable () -> Date
+    private let notifier: BannerNotifier
+    /// Count from the most recent successful settlement. Dock badge
+    /// and menu bar label derive from this so they don't flicker off
+    /// while a check is in flight.
+    private(set) var lastSettledCount: Int = 0
+    private var lastNotifyBannerPref: Bool
 
     private var checkTask: Task<Void, Never>?
     private var scheduledTask: Task<Void, Never>?
@@ -87,11 +104,14 @@ final class BrewUpdateManager {
     init(preferences: PreferencesStore,
          runner: @escaping Runner = BrewUpdateManager.defaultRunner,
          sleep: @escaping Sleeper = { try await Task.sleep(for: $0) },
-         clock: @escaping @Sendable () -> Date = { Date() }) {
+         clock: @escaping @Sendable () -> Date = { Date() },
+         notifier: BannerNotifier = BrewUpdateManager.defaultNotifier) {
         self.preferences = preferences
         self.runner      = runner
         self.sleep       = sleep
         self.clock       = clock
+        self.notifier    = notifier
+        self.lastNotifyBannerPref = preferences.notifySystemBanner
     }
 
     // MARK: - Lifecycle
@@ -225,15 +245,47 @@ final class BrewUpdateManager {
     }
 
     private func settle(success packages: [OutdatedPackage]) {
+        let previousCount = lastSettledCount
         outdated = packages
         state = .idle(count: packages.count)
         preferences.lastCheckAt = clock()
+        lastSettledCount = packages.count
+        applyBannerAction(Self.bannerActionOnSettle(
+            previousCount: previousCount,
+            newCount: packages.count,
+            enabled: preferences.notifySystemBanner
+        ))
     }
 
     private func settle(failed message: String) {
         outdated = []
         state = .failed(message: message)
         preferences.lastCheckAt = clock()
+    }
+
+    /// Act on a preference toggle. Called from the app when the user
+    /// flips a notification-style checkbox — pure decision + imperative
+    /// side effects are split between this entry point and the pure
+    /// `bannerActionOnPrefChange` / `dockBadgeLabel` / `menuBarShowsCount`
+    /// helpers.
+    func preferencesChanged() {
+        let action = Self.bannerActionOnPrefChange(
+            wasEnabled: lastNotifyBannerPref,
+            isEnabled: preferences.notifySystemBanner
+        )
+        lastNotifyBannerPref = preferences.notifySystemBanner
+        applyBannerAction(action)
+    }
+
+    private func applyBannerAction(_ action: BannerAction) {
+        switch action {
+        case .post(let count):
+            notifier.post(count)
+        case .removeDelivered:
+            notifier.removeDelivered()
+        case .noop:
+            break
+        }
     }
 
     private func terseStderr(_ stderr: Data, fallback: String) -> String {
@@ -338,6 +390,41 @@ final class BrewUpdateManager {
         ["upgrade"] + packages.map(\.name)
     }
 
+    // MARK: - Notification surface (pure)
+
+    enum BannerAction: Equatable, Sendable {
+        case post(count: Int)
+        case removeDelivered
+        case noop
+    }
+
+    /// Fixed identifier so macOS replaces the Notification Center
+    /// entry on each post rather than stacking duplicates.
+    nonisolated static let notificationIdentifier = "com.xalior.Steading.brew-updates"
+
+    nonisolated static func dockBadgeLabel(count: Int, enabled: Bool) -> String? {
+        guard enabled, count > 0 else { return nil }
+        return "\(count)"
+    }
+
+    nonisolated static func menuBarShowsCount(count: Int, enabled: Bool) -> Bool {
+        enabled && count > 0
+    }
+
+    nonisolated static func bannerActionOnSettle(previousCount: Int,
+                                                 newCount: Int,
+                                                 enabled: Bool) -> BannerAction {
+        guard enabled else { return .noop }
+        if newCount > 0 { return .post(count: newCount) }
+        return previousCount > 0 ? .removeDelivered : .noop
+    }
+
+    nonisolated static func bannerActionOnPrefChange(wasEnabled: Bool,
+                                                     isEnabled: Bool) -> BannerAction {
+        if wasEnabled && !isEnabled { return .removeDelivered }
+        return .noop
+    }
+
     /// Map manager state + selection counts to the Brew Package
     /// Manager window's button enablement. Pure.
     nonisolated static func buttons(state: State,
@@ -354,6 +441,29 @@ final class BrewUpdateManager {
             cancelEnabled:   isApplying
         )
     }
+
+    // MARK: - Default notifier
+
+    nonisolated static let defaultNotifier: BannerNotifier = BannerNotifier(
+        post: { count in
+            let content = UNMutableNotificationContent()
+            content.title = "Brew updates available"
+            content.body  = count == 1
+                ? "1 pending update"
+                : "\(count) pending updates"
+            let request = UNNotificationRequest(
+                identifier: BrewUpdateManager.notificationIdentifier,
+                content: content,
+                trigger: nil
+            )
+            UNUserNotificationCenter.current().add(request)
+        },
+        removeDelivered: {
+            UNUserNotificationCenter.current().removeDeliveredNotifications(
+                withIdentifiers: [BrewUpdateManager.notificationIdentifier]
+            )
+        }
+    )
 
     // MARK: - Default runner
 
