@@ -45,7 +45,7 @@ updated continuously.
   Phase-level cumulative gates are checked as each phase's last code
   lands; the sprint does not complete until every phase's criteria are
   verified.
-- **Status:** not started
+- **Status:** in progress (opened 2026-04-23)
 
 ## Tasks
 
@@ -58,6 +58,10 @@ updated continuously.
     - [ ] Phase 5: dock badge, menu bar label, system banner
 
 ## Progress Log
+
+- **2026-04-23** — Branch cut from `main` at 8c2e98a; baseline test suite
+  green (63 tests). Tracker sections layered onto the existing plan
+  doc per repo convention. Sprint 1 opened. Starting Phase 1.
 
 ## Decisions & Notes
 
