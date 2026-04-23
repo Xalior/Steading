@@ -4,7 +4,14 @@ import SwiftUI
 struct SteadingApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var appState = AppState()
-    @State private var preferences = PreferencesStore()
+    @State private var preferences: PreferencesStore
+    @State private var brewUpdates: BrewUpdateManager
+
+    init() {
+        let prefs = PreferencesStore()
+        _preferences = State(initialValue: prefs)
+        _brewUpdates = State(initialValue: BrewUpdateManager(preferences: prefs))
+    }
 
     var body: some Scene {
         Window("Steading", id: "main") {
@@ -17,10 +24,12 @@ struct SteadingApp: App {
             }
             .environment(appState)
             .environment(preferences)
+            .environment(brewUpdates)
             .background(WindowBridge(appDelegate: appDelegate))
             .task {
                 await appState.refreshBrewStatus()
                 appState.refreshHelperStatus()
+                brewUpdates.start()
             }
             .frame(minWidth: 860, minHeight: 560)
         }

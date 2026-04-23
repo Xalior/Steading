@@ -13,6 +13,9 @@ struct ContentView: View {
             detailView
         }
         .navigationTitle("Steading")
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            BottomStatusStrip()
+        }
     }
 
     @ViewBuilder

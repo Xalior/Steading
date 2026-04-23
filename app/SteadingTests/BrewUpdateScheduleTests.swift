@@ -83,4 +83,25 @@ struct BrewUpdateScheduleTests {
         #expect(BrewUpdateManager.nextRetryDelay(attempt: 0) == nil)
         #expect(BrewUpdateManager.nextRetryDelay(attempt: -1) == nil)
     }
+
+    // MARK: - statusStripText
+
+    @Test("statusStripText: .idle(count: 0) returns nil — strip hidden")
+    func strip_hidden_when_zero() {
+        #expect(BrewUpdateManager.statusStripText(for: .idle(count: 0)) == nil)
+    }
+
+    @Test("statusStripText: singular and plural forms")
+    func strip_singular_plural() {
+        #expect(BrewUpdateManager.statusStripText(for: .idle(count: 1)) == "1 pending update")
+        #expect(BrewUpdateManager.statusStripText(for: .idle(count: 2)) == "2 pending updates")
+        #expect(BrewUpdateManager.statusStripText(for: .idle(count: 7)) == "7 pending updates")
+    }
+
+    @Test("statusStripText: checking and failed messages")
+    func strip_checking_and_failed() {
+        #expect(BrewUpdateManager.statusStripText(for: .checking) == "Checking…")
+        #expect(BrewUpdateManager.statusStripText(for: .failed(message: "nope"))
+                == "Last check failed: nope")
+    }
 }
