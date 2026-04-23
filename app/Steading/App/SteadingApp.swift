@@ -29,6 +29,7 @@ struct SteadingApp: App {
             .task {
                 await appState.refreshBrewStatus()
                 appState.refreshHelperStatus()
+                appDelegate.isApplyInFlight = { brewUpdates.state == .applying }
                 brewUpdates.start()
             }
             .frame(minWidth: 860, minHeight: 560)
@@ -47,6 +48,13 @@ struct SteadingApp: App {
             PreferencesView()
                 .environment(preferences)
         }
+
+        Window("Brew Package Manager", id: "brew-package-manager") {
+            BrewPackageManagerView()
+                .environment(brewUpdates)
+        }
+        .windowStyle(.titleBar)
+        .defaultSize(width: 760, height: 560)
 
         Window("Edit /etc/hosts", id: "hosts-editor") {
             HostsEditorView()
@@ -71,6 +79,10 @@ private struct ToolsMenuContent: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
+        Button("Brew Package Manager…") {
+            openWindow(id: "brew-package-manager")
+        }
+        Divider()
         Button("Edit /etc/hosts…") {
             openWindow(id: "hosts-editor")
         }

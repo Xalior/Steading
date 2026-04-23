@@ -276,7 +276,7 @@ final class BrewUpdateManager {
                 switch event {
                 case .output(_, let data):
                     let piece = String(data: data, encoding: .utf8) ?? ""
-                    await self.appendLog(piece)
+                    self.appendLog(piece)
                 case .exited(let code):
                     outcome = (code == 0) ? .success : .failed(exitCode: code)
                 case .cancelled:

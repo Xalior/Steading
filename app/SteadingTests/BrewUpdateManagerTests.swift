@@ -12,7 +12,7 @@ import Foundation
 @MainActor
 struct BrewUpdateManagerTests {
 
-    private static let emptyOutdatedJSON = #"{"formulae": [], "casks": []}"#
+    nonisolated static let emptyOutdatedJSON = #"{"formulae": [], "casks": []}"#
         .data(using: .utf8)!
 
     private func scratchPreferences() -> (PreferencesStore, String) {

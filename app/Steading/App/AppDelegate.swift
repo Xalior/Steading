@@ -15,6 +15,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// NSWindow if it was closed.
     var openMainWindow: (() -> Void)?
 
+    /// Injected by the root view so the terminate handler can ask
+    /// the brew-updater whether an upgrade is mid-flight. Returns
+    /// `true` iff the user should be warned before quitting.
+    var isApplyInFlight: (() -> Bool)?
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag { showWindow() }
         return true
@@ -22,6 +27,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if isApplyInFlight?() == true {
+            NotificationCenter.default.post(name: .steadingAppQuitDuringApply, object: nil)
+            return .terminateLater
+        }
+        return .terminateNow
     }
 
     func showWindow() {
