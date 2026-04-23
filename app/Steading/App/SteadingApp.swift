@@ -39,13 +39,11 @@ struct SteadingApp: App {
         .windowStyle(.titleBar)
         .defaultSize(width: 720, height: 520)
 
-        MenuBarExtra {
+        MenuBarExtra("Steading", systemImage: "house.fill") {
             MenuBarContent()
                 .environment(appState)
-        } label: {
-            Image(systemName: "house.fill")
-                .help("Steading")
         }
+        .menuBarExtraStyle(.window)
     }
 }
 
