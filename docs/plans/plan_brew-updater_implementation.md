@@ -66,10 +66,52 @@ updated continuously.
   doc per repo convention. Sprint 1 opened. Starting Phase 1.
 - **2026-04-23** — Phase 1 code landed. `make -C app build/test` green
   (71 tests, 7 suites; +8 prefs tests, +1 suite). Starting Phase 2.
+- **2026-04-23** — Phases 2 and 3 code landed. Build + test green (106
+  tests across 13 suites). Phase 2 adds OutdatedPackage + parser,
+  BrewUpdateManager with scheduler and retry, bottom status strip, and
+  launch wiring. Phase 3 adds the streaming subprocess surface, the
+  Apply pipeline on the manager, the Brew Package Manager window with
+  list/buttons/progress area, the Tools menu entry, and the
+  close-during-apply warning via NSWindowDelegate +
+  applicationShouldTerminate. Stopping at Phase 4's pre-implementation
+  gate — see Blockers.
 
 ## Decisions & Notes
 
 ## Blockers
+
+### Phase 4 pre-implementation gate — sudo propagation verification
+
+The plan's Phase 4 Overview requires an empirical verification, to be
+run **before** any Phase 4 code lands, that a pre-warmed sudo
+timestamp actually propagates to a `brew upgrade <cask>` spawned
+without a controlling tty. The steps are:
+
+1. Spawn `/usr/bin/sudo -v -S` with the user's password piped to
+   stdin. Wait for exit 0.
+2. Spawn `brew upgrade <cask-known-to-need-sudo>` as a plain `Process`
+   child (no controlling tty).
+3. Observe: does brew's internal `sudo` run silently on the warm
+   timestamp, or does it re-prompt?
+
+If brew runs silently → Phase 4 proceeds as specified. If it
+re-prompts → the PoC approach fails and the plan says to stop and
+escalate (likely redesign toward `SUDO_ASKPASS`).
+
+**Why this is a blocker for me:** the experiment needs the user's
+actual sudo password and a locally-present cask that triggers a
+privileged postinstall script. I don't have the password and am not
+going to prompt for one over this channel. The plan is explicit that
+agents must not push through or invent workarounds when the gate
+can't be cleared — so I'm stopping before Phase 4 code begins.
+
+**Surfaced to user:** awaiting guidance. Options:
+- User runs the experiment locally and reports the outcome; I
+  continue Phase 4 as specified, or escalate per the plan.
+- User chooses to skip Phase 4 entirely for this sprint; sprint
+  completes on Phases 1, 2, 3, 5.
+- User chooses to redirect Phase 4 to the SUDO_ASKPASS alternative;
+  that is a plan change, not refinement — would route through `/plan`.
 
 ## Commits
 
