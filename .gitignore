@@ -8,3 +8,6 @@ tart/*
 
 # macOS
 .DS_Store
+
+# Workflow docs
+docs/discovery/*.md
