@@ -29,7 +29,9 @@
 		8078EC400560936602AA6010 /* BuiltInServiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B1E7B0845CEB8241142969C /* BuiltInServiceDetailView.swift */; };
 		8D5CF143A5C744BBDDD1B339 /* com.xalior.Steading.privhelper.plist in CopyFiles */ = {isa = PBXBuildFile; fileRef = A6E4C4D985048F9CF0B1285C /* com.xalior.Steading.privhelper.plist */; };
 		931FE6204696DA4E9DCAD0A1 /* BrewStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8794DE1ECD29CC0BF8B94D3 /* BrewStatusBadge.swift */; };
+		938FCA36542DC0473D1C0D45 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95A07A01220FB216FE73389B /* PreferencesStore.swift */; };
 		948E99504645C1D7F2CBCC54 /* MenuBarContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6CBE520AEE4A16C62B7F389 /* MenuBarContent.swift */; };
+		9A5A38922B0CBEF61331EE50 /* PreferencesStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3E76ECED5CE0ECEEF61BB2D /* PreferencesStoreTests.swift */; };
 		9D406F49ADA6A79196E73DF8 /* ProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47A7FDF1CF6DD4DD317F06EE /* ProcessRunner.swift */; };
 		A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */; };
 		B6922DDBE8E384BB1C266E7C /* PrivHelperAllowlistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */; };
@@ -109,6 +111,7 @@
 		7C68F7A05734954EA423C2B6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		81F9C7A2DBF73EDA4A98A518 /* AppStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTests.swift; sourceTree = "<group>"; };
 		8E9A1CB32DC5FC5DBF3CB877 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		95A07A01220FB216FE73389B /* PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
 		95C7A751F5DDA87B5F0E5F2F /* SteadingPrivHelperProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteadingPrivHelperProtocol.swift; sourceTree = "<group>"; };
 		96B0EE6A70B228F7CB0D472F /* BrewDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewDetector.swift; sourceTree = "<group>"; };
 		992A0F7706B92B084A1BDBF7 /* BuiltInCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInCatalog.swift; sourceTree = "<group>"; };
@@ -121,6 +124,7 @@
 		AAE01FD58CA5CED026DC5AF1 /* BuiltInServiceRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRegistry.swift; sourceTree = "<group>"; };
 		ABA7DFE5D12701CCFF57393A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B0EFEB5D383616F979F1C63F /* PrivHelperAllowlist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperAllowlist.swift; sourceTree = "<group>"; };
+		B3E76ECED5CE0ECEEF61BB2D /* PreferencesStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStoreTests.swift; sourceTree = "<group>"; };
 		B8794DE1ECD29CC0BF8B94D3 /* BrewStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewStatusBadge.swift; sourceTree = "<group>"; };
 		BAE4B102376FC6E3D88E0B21 /* SteadingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SteadingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C2355F8756FEB41710F77BF4 /* HostsEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostsEditorView.swift; sourceTree = "<group>"; };
@@ -143,6 +147,7 @@
 				AAE01FD58CA5CED026DC5AF1 /* BuiltInServiceRegistry.swift */,
 				518AD0434FFD8D998CAC5FB6 /* BuiltInServiceRunner.swift */,
 				3F631AFF0C04F2D5533E126C /* CatalogItem.swift */,
+				95A07A01220FB216FE73389B /* PreferencesStore.swift */,
 				47A7FDF1CF6DD4DD317F06EE /* ProcessRunner.swift */,
 				FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */,
 				1607A01EF1A948C711D87CFC /* WebappCatalog.swift */,
@@ -202,6 +207,7 @@
 				1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */,
 				67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */,
 				A384EE2CBFCF3CD0BF3BF127 /* HostsFileWriterTests.swift */,
+				B3E76ECED5CE0ECEEF61BB2D /* PreferencesStoreTests.swift */,
 				DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */,
 				1AA635A3848267492662B980 /* XPCIntegrationTests.swift */,
 			);
@@ -396,6 +402,7 @@
 				3398A120057E163AA6C00C38 /* HostsFileWriter.swift in Sources */,
 				948E99504645C1D7F2CBCC54 /* MenuBarContent.swift in Sources */,
 				E7AAF54B7B276501030AC2EC /* OnboardingView.swift in Sources */,
+				938FCA36542DC0473D1C0D45 /* PreferencesStore.swift in Sources */,
 				6DAE7C151728E1ECFB995D83 /* PrivHelperAllowlist.swift in Sources */,
 				BF5BEB980CBCF5EF87BE9855 /* PrivHelperClient.swift in Sources */,
 				9D406F49ADA6A79196E73DF8 /* ProcessRunner.swift in Sources */,
@@ -429,6 +436,7 @@
 				A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */,
 				04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */,
 				CA898660CB4E27D094823695 /* HostsFileWriterTests.swift in Sources */,
+				9A5A38922B0CBEF61331EE50 /* PreferencesStoreTests.swift in Sources */,
 				B6922DDBE8E384BB1C266E7C /* PrivHelperAllowlistTests.swift in Sources */,
 				2E9A18249FE13459D50CA5B9 /* PrivHelperService.swift in Sources */,
 				E77AC5212B5A9B36D0598DB9 /* XPCIntegrationTests.swift in Sources */,
