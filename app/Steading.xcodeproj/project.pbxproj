@@ -12,6 +12,7 @@
 		04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */; };
 		051FB78D75D68C7C13D40855 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE58958345FEE2847E8E57AE /* WelcomeView.swift */; };
 		08FA41D5EA90086176A8F033 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C68F7A05734954EA423C2B6 /* AppDelegate.swift */; };
+		11BCE8CED4F5A9C92CD19BED /* BrewApplyPureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86D9EE2616DF441FED03FA77 /* BrewApplyPureTests.swift */; };
 		129B589725293E7C791250B6 /* CatalogItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F631AFF0C04F2D5533E126C /* CatalogItem.swift */; };
 		13CB00A9DB893D37E7E9F62E /* CatalogDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2DB46FC31752B14A6A9B387 /* CatalogDetailView.swift */; };
 		18D98BF9F9860CAD63970523 /* PrivHelperListenerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AA1D53A34F5A36CDB3D4188 /* PrivHelperListenerDelegate.swift */; };
@@ -125,6 +126,7 @@
 		7707938979911C8523D73059 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7C68F7A05734954EA423C2B6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		81F9C7A2DBF73EDA4A98A518 /* AppStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTests.swift; sourceTree = "<group>"; };
+		86D9EE2616DF441FED03FA77 /* BrewApplyPureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewApplyPureTests.swift; sourceTree = "<group>"; };
 		8C98F968FED88BA446D39A53 /* StreamingProcessRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingProcessRunnerTests.swift; sourceTree = "<group>"; };
 		8E9A1CB32DC5FC5DBF3CB877 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		95A07A01220FB216FE73389B /* PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
@@ -229,6 +231,7 @@
 			isa = PBXGroup;
 			children = (
 				81F9C7A2DBF73EDA4A98A518 /* AppStateTests.swift */,
+				86D9EE2616DF441FED03FA77 /* BrewApplyPureTests.swift */,
 				1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */,
 				115AAAD61D800D47101E584C /* BrewOutdatedLiveTests.swift */,
 				1A190D0EF6F2E44373C7A6DA /* BrewOutdatedParserTests.swift */,
@@ -468,6 +471,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C11D86FFA26BB72DE065191C /* AppStateTests.swift in Sources */,
+				11BCE8CED4F5A9C92CD19BED /* BrewApplyPureTests.swift in Sources */,
 				A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */,
 				9CF825D29F8FF23D49132D85 /* BrewOutdatedLiveTests.swift in Sources */,
 				FA5246E2F8BD93EEAB26CDF6 /* BrewOutdatedParserTests.swift in Sources */,
