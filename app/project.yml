@@ -41,6 +41,10 @@ targets:
         embed: true
         copy:
           destination: executables
+      - target: SteadingAskpass
+        embed: true
+        copy:
+          destination: executables
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.xalior.Steading
@@ -65,6 +69,20 @@ targets:
         PRODUCT_NAME: SteadingPrivHelper
         PRODUCT_BUNDLE_IDENTIFIER: com.xalior.Steading.privhelper
         OTHER_CODE_SIGN_FLAGS: --identifier com.xalior.Steading.privhelper
+        SKIP_INSTALL: YES
+        ENABLE_HARDENED_RUNTIME: YES
+
+  SteadingAskpass:
+    type: tool
+    platform: macOS
+    sources:
+      - path: SteadingAskpass
+      - path: Steading/Shared
+    settings:
+      base:
+        PRODUCT_NAME: steading-askpass
+        PRODUCT_BUNDLE_IDENTIFIER: com.xalior.Steading.askpass
+        OTHER_CODE_SIGN_FLAGS: --identifier com.xalior.Steading.askpass
         SKIP_INSTALL: YES
         ENABLE_HARDENED_RUNTIME: YES
 

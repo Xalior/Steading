@@ -30,29 +30,18 @@ final class BrewUpdateManager {
         case failed(exitCode: Int32)
         case cancelled
         case spawnFailed(reason: String)
-        /// User dismissed the password modal before brew ran.
-        case modalCancelled
-        /// Three wrong passwords in a row; apply aborted before brew ran.
-        case adminAccessDenied
     }
-
-    /// Dependency boundary for collecting the password from the UI.
-    /// Returning `nil` signals the user dismissed the modal — apply
-    /// aborts before spawning brew.
-    typealias PasswordProvider = @Sendable () async -> String?
 
     /// Dependency boundary for locating the brew binary. Default
     /// walks `BrewDetector.standardSearchPaths`; tests inject a path
     /// to a fake brew so real brew doesn't run.
     typealias BrewPathResolver = @Sendable () -> String?
 
-    /// Dependency boundary for the askpass helper script. The
-    /// returned URL is passed to brew via `SUDO_ASKPASS`. Default
-    /// creates a minimal shell script that echoes
-    /// `$STEADING_SUDO_PASSWORD`; the full stage-2 design will
-    /// replace this with a signed helper that calls back into the
-    /// Steading GUI via XPC.
-    typealias AskpassLocator = @Sendable () -> URL?
+    /// Dependency boundary for locating the bundled `steading-askpass`
+    /// helper. Default returns the path next to the main app binary;
+    /// tests can inject any path (or `nil` to skip the `SUDO_ASKPASS`
+    /// env entirely).
+    typealias AskpassHelperResolver = @Sendable () -> String?
 
     /// Enablement decisions for the Brew Package Manager window's
     /// controls. Pure — derived from state and counts.
@@ -107,19 +96,13 @@ final class BrewUpdateManager {
     /// fresh check begins.
     private(set) var recentApplyOutcome: ApplyOutcome?
 
-    /// `true` while the pre-warm retry loop is collecting or
-    /// validating passwords; `false` once the brew subprocess is
-    /// running or the apply has aborted. The Brew Package Manager
-    /// window binds its password modal visibility to this.
-    private(set) var isPreWarming: Bool = false
-
     private let preferences: PreferencesStore
     private let runner: Runner
     private let sleep: Sleeper
     private let clock: @Sendable () -> Date
     private let notifier: BannerNotifier
     private let brewPathResolver: BrewPathResolver
-    private let askpassLocator: AskpassLocator
+    private let askpassHelperResolver: AskpassHelperResolver
     /// Count from the most recent successful settlement. Dock badge
     /// and menu bar label derive from this so they don't flicker off
     /// while a check is in flight.
@@ -137,15 +120,15 @@ final class BrewUpdateManager {
          clock: @escaping @Sendable () -> Date = { Date() },
          notifier: BannerNotifier = BrewUpdateManager.defaultNotifier,
          brewPathResolver: @escaping BrewPathResolver = BrewUpdateManager.defaultBrewPathResolver,
-         askpassLocator: @escaping AskpassLocator = BrewUpdateManager.defaultAskpassLocator) {
-        self.preferences       = preferences
-        self.runner            = runner
-        self.sleep             = sleep
-        self.clock             = clock
-        self.notifier          = notifier
-        self.brewPathResolver  = brewPathResolver
-        self.askpassLocator    = askpassLocator
-        self.lastNotifyBannerPref = preferences.notifySystemBanner
+         askpassHelperResolver: @escaping AskpassHelperResolver = BrewUpdateManager.defaultAskpassHelperResolver) {
+        self.preferences           = preferences
+        self.runner                = runner
+        self.sleep                 = sleep
+        self.clock                 = clock
+        self.notifier              = notifier
+        self.brewPathResolver      = brewPathResolver
+        self.askpassHelperResolver = askpassHelperResolver
+        self.lastNotifyBannerPref  = preferences.notifySystemBanner
     }
 
     // MARK: - Lifecycle
@@ -332,15 +315,12 @@ final class BrewUpdateManager {
     // MARK: - Apply pipeline
 
     /// Kick off `brew upgrade <packages…>`, streaming output into
-    /// `applyLog`. Stage 1 askpass path: collect the password from
-    /// the UI via `passwordProvider` (nil → `.modalCancelled`), set
-    /// `SUDO_ASKPASS` + `STEADING_SUDO_PASSWORD` on brew's env, and
-    /// spawn. brew's internal sudo will hit "no tty" and auto-invoke
-    /// the askpass helper, which prints the password from the env.
-    /// Silently no-ops if the manager is already applying or
-    /// currently checking.
-    func apply(_ packages: [OutdatedPackage],
-               passwordProvider: @escaping PasswordProvider) {
+    /// `applyLog`. Stage-2 askpass path: no password collection up
+    /// front — brew is spawned immediately with `SUDO_ASKPASS`
+    /// pointing at the bundled `steading-askpass` helper. When sudo
+    /// needs a password it invokes the helper, which IPCs back into
+    /// the GUI to surface the password modal on demand.
+    func apply(_ packages: [OutdatedPackage]) {
         guard applyTask == nil, checkTask == nil else { return }
         scheduledTask?.cancel()
         scheduledTask = nil
@@ -348,50 +328,23 @@ final class BrewUpdateManager {
         recentApplyOutcome = nil
         state = .applying
 
-        isPreWarming = true
         applyTask = Task { [weak self] in
             guard let self else { return }
-            guard let password = await passwordProvider() else {
-                self.isPreWarming = false
-                self.finishPreWarmAbort(outcome: .modalCancelled)
-                return
-            }
-            self.isPreWarming = false
-            await self.runBrewUpgrade(packages: packages, password: password)
+            await self.runBrewUpgrade(packages: packages)
         }
     }
 
-    private func finishPreWarmAbort(outcome: ApplyOutcome) {
-        applyTask = nil
-        recentApplyOutcome = outcome
-        state = .failed(message: Self.applyFailureMessage(for: outcome))
-    }
-
-    private static func applyFailureMessage(for outcome: ApplyOutcome) -> String {
-        switch outcome {
-        case .modalCancelled:     return "upgrade cancelled"
-        case .adminAccessDenied:  return "administrator access denied"
-        case .spawnFailed(let r): return r
-        case .failed(let code):   return "brew upgrade exited \(code)"
-        case .cancelled:          return "upgrade cancelled"
-        case .success:            return ""
-        }
-    }
-
-    private func runBrewUpgrade(packages: [OutdatedPackage], password: String) async {
+    private func runBrewUpgrade(packages: [OutdatedPackage]) async {
         let argv = Self.brewUpgradeArgv(for: packages)
         guard let brewPath = brewPathResolver() else {
             finishApply(outcome: .spawnFailed(reason: "no brew on disk"))
             return
         }
-        guard let askpassURL = askpassLocator() else {
-            finishApply(outcome: .spawnFailed(reason: "askpass helper unavailable"))
-            return
-        }
 
         var env = ProcessInfo.processInfo.environment
-        env["SUDO_ASKPASS"] = askpassURL.path
-        env["STEADING_SUDO_PASSWORD"] = password
+        if let helper = askpassHelperResolver() {
+            env["SUDO_ASKPASS"] = helper
+        }
 
         let handle = StreamingProcessRunner.run(
             executable: brewPath,
@@ -466,12 +419,6 @@ final class BrewUpdateManager {
         ["upgrade"] + packages.map(\.name)
     }
 
-    /// Phase 4 scaffolds an always-true prompt decision so later
-    /// phases can detect "no sudo needed" and skip the modal. For
-    /// now: prompt every Apply regardless of what's marked.
-    nonisolated static func shouldPromptForPassword(markedPackages: [OutdatedPackage]) -> Bool {
-        true
-    }
 
     // MARK: - Notification surface (pure)
 
@@ -556,30 +503,15 @@ final class BrewUpdateManager {
         })
     }
 
-    /// Stage-1 askpass locator: materialises a minimal shell script
-    /// that echoes `$STEADING_SUDO_PASSWORD` at a stable per-user
-    /// path and returns its URL. Idempotent — the script is only
-    /// written if missing. Stage 2 will replace this with a bundled
-    /// signed helper that IPCs back into the GUI.
-    nonisolated static let defaultAskpassLocator: AskpassLocator = {
-        let dir = FileManager.default.urls(for: .applicationSupportDirectory,
-                                           in: .userDomainMask).first!
-            .appendingPathComponent("Steading", isDirectory: true)
-        try? FileManager.default.createDirectory(
-            at: dir, withIntermediateDirectories: true
-        )
-        let url = dir.appendingPathComponent("steading-askpass-stage1.sh")
-        let body = """
-        #!/bin/sh
-        printf '%s\\n' "$STEADING_SUDO_PASSWORD"
-        """
-        if !FileManager.default.fileExists(atPath: url.path) {
-            try? body.write(to: url, atomically: true, encoding: .utf8)
-            try? FileManager.default.setAttributes(
-                [.posixPermissions: 0o700], ofItemAtPath: url.path
-            )
-        }
-        return url
+    /// Default askpass helper path: the `steading-askpass` binary
+    /// bundled next to the main app executable. Returns `nil` if it
+    /// isn't present (unsigned dev builds, tests) so callers can
+    /// decide whether to skip the `SUDO_ASKPASS` env entirely.
+    nonisolated static let defaultAskpassHelperResolver: AskpassHelperResolver = {
+        guard let exec = Bundle.main.executableURL else { return nil }
+        let candidate = exec.deletingLastPathComponent()
+            .appendingPathComponent("steading-askpass").path
+        return FileManager.default.isExecutableFile(atPath: candidate) ? candidate : nil
     }
 
     // MARK: - Default runner

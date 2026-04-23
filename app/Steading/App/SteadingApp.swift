@@ -6,6 +6,7 @@ struct SteadingApp: App {
     @State private var appState = AppState()
     @State private var preferences: PreferencesStore
     @State private var brewUpdates: BrewUpdateManager
+    @State private var askpassService = AskpassService()
 
     init() {
         let prefs = PreferencesStore()
@@ -25,6 +26,7 @@ struct SteadingApp: App {
             .environment(appState)
             .environment(preferences)
             .environment(brewUpdates)
+            .environment(askpassService)
             .background(WindowBridge(appDelegate: appDelegate))
             .background(NotificationSurfaceController()
                 .environment(brewUpdates)
@@ -33,6 +35,7 @@ struct SteadingApp: App {
                 await appState.refreshBrewStatus()
                 appState.refreshHelperStatus()
                 appDelegate.isApplyInFlight = { brewUpdates.state == .applying }
+                askpassService.start()
                 brewUpdates.start()
             }
             .frame(minWidth: 860, minHeight: 560)
@@ -55,6 +58,7 @@ struct SteadingApp: App {
         Window("Brew Package Manager", id: "brew-package-manager") {
             BrewPackageManagerView()
                 .environment(brewUpdates)
+                .environment(askpassService)
         }
         .windowStyle(.titleBar)
         .defaultSize(width: 760, height: 560)
