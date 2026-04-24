@@ -18,7 +18,7 @@ settings:
     DEVELOPMENT_TEAM: M353B943AK
     ENABLE_HARDENED_RUNTIME: YES
     GENERATE_INFOPLIST_FILE: YES
-    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    ASSETCATALOG_COMPILER_APPICON_NAME: Steading
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     DEAD_CODE_STRIPPING: YES
     COMBINE_HIDPI_IMAGES: YES
@@ -53,6 +53,7 @@ targets:
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         INFOPLIST_KEY_NSHumanReadableCopyright: MIT License
         CODE_SIGN_ENTITLEMENTS: Steading/Steading.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: Steading
     scheme:
       testTargets:
         - SteadingTests

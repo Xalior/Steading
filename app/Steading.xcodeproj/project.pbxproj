@@ -53,6 +53,7 @@
 		9D406F49ADA6A79196E73DF8 /* ProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47A7FDF1CF6DD4DD317F06EE /* ProcessRunner.swift */; };
 		A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */; };
 		A8B54CD6DA0FB1EEE66FDA60 /* BottomStatusStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8CFDDE4D1C0F539DB354FD /* BottomStatusStrip.swift */; };
+		AD4CFE124B3E1CD51F66307D /* Steading.icon in Resources */ = {isa = PBXBuildFile; fileRef = 2154574024892E23EF74E084 /* Steading.icon */; };
 		B6922DDBE8E384BB1C266E7C /* PrivHelperAllowlistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */; };
 		B7885D732028C9846E53905A /* HostsFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFC848ED345ADD229D74A5A /* HostsFileWriter.swift */; };
 		BEBFA2E4D9DD0CD4C47DEA4C /* AskpassServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AAF16B2DF90D69AD1CF6BD3 /* AskpassServiceTests.swift */; };
@@ -138,6 +139,7 @@
 		1AA635A3848267492662B980 /* XPCIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCIntegrationTests.swift; sourceTree = "<group>"; };
 		1C5B9FA877D00376140D115F /* Steading.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Steading.entitlements; sourceTree = "<group>"; };
 		1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewDetectorTests.swift; sourceTree = "<group>"; };
+		2154574024892E23EF74E084 /* Steading.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = Steading.icon; sourceTree = "<group>"; };
 		35D91110641303655AF49F7B /* PrivHelperClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperClient.swift; sourceTree = "<group>"; };
 		3F631AFF0C04F2D5533E126C /* CatalogItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogItem.swift; sourceTree = "<group>"; };
 		455044AAFD76888EB755F58A /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
@@ -307,6 +309,7 @@
 				4FBB910B5E22E40FBB2FEDAA /* Views */,
 				ABA7DFE5D12701CCFF57393A /* Assets.xcassets */,
 				1C5B9FA877D00376140D115F /* Steading.entitlements */,
+				2154574024892E23EF74E084 /* Steading.icon */,
 			);
 			path = Steading;
 			sourceTree = "<group>";
@@ -483,6 +486,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1ECA67F611AE2F6C1475362F /* Assets.xcassets in Resources */,
+				AD4CFE124B3E1CD51F66307D /* Steading.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -623,7 +627,7 @@
 		2A72E19C9BBF9113193B7132 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Steading;
 				CODE_SIGN_ENTITLEMENTS = Steading/Steading.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Steading;
@@ -643,7 +647,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Steading;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -743,7 +747,7 @@
 		70CE2D069621416ECC63F704 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Steading;
 				CODE_SIGN_ENTITLEMENTS = Steading/Steading.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Steading;
@@ -814,7 +818,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Steading;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
