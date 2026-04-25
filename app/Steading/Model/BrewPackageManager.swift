@@ -211,9 +211,234 @@ final class BrewPackageManager {
     /// Installed taps in display order, refreshed alongside the index.
     private(set) var taps: [BrewTapInfo] = []
 
-    // MARK: - Lifecycle (skeleton — load/apply/pin land in subsequent commits)
+    // MARK: - DI seams
 
-    init() {}
+    /// One streaming brew sub-call. Spawns a process, yields output
+    /// pieces as they arrive, and concludes with one terminal event
+    /// carrying the [ApplyOutcome].
+    enum SubCallEvent: Sendable, Equatable {
+        case output(String)
+        case finished(ApplyOutcome)
+    }
+
+    /// Handle returned by a sub-call spawn. The events stream ends
+    /// after exactly one terminal `.finished` event. `cancel` sends
+    /// the underlying process the same SIGTERM → SIGKILL sequence
+    /// `StreamingProcessRunner.Handle.cancel` does.
+    struct SubCallHandle: Sendable {
+        let events: AsyncStream<SubCallEvent>
+        let cancel: @Sendable () -> Void
+    }
+
+    /// Dependency boundary for the Apply pipeline's per-sub-call
+    /// spawn. Production wraps `StreamingProcessRunner` with the
+    /// brew path and the bundled askpass helper; tests inject a
+    /// closure that emits canned events to drive the state machine.
+    typealias SubCallRunner = @Sendable (_ argv: [String]) -> SubCallHandle
+
+    // MARK: - Lifecycle
+
+    private let subCallRunner: SubCallRunner
+    private var applyTask: Task<Void, Never>?
+    private var inflightHandle: SubCallHandle?
+    private var autoremoveContinuation: CheckedContinuation<Bool, Never>?
+
+    init(subCallRunner: @escaping SubCallRunner = BrewPackageManager.defaultSubCallRunner) {
+        self.subCallRunner = subCallRunner
+        // The skeleton starts in `.idle` rather than `.loading` until
+        // an index loader lands; the loader sub-commit flips this.
+        self.state = .idle
+    }
+
+    // MARK: - Index population
+
+    /// Replace the in-memory universe + tap list. Called by the index
+    /// loader (subsequent commit) and directly by integration tests
+    /// to seed manager state without spawning brew. Resets state to
+    /// `.idle` if currently `.loading`.
+    func setIndex(rows: [PackageRow], taps: [BrewTapInfo]) {
+        self.rows = rows
+        self.taps = taps
+        if case .loading = state { state = .idle }
+    }
+
+    // MARK: - Apply pipeline
+
+    /// Kick off the Apply pipeline against the currently-marked rows.
+    /// Two-phase execution (add then remove), with the post-uninstall
+    /// autoremove confirmation injected between the remove sub-call
+    /// and pipeline completion. The pipeline is a no-op if no marks
+    /// imply a sub-call (e.g. all marked rows currently produce empty
+    /// argv tails — possible only at the empty-mark boundary).
+    func apply() {
+        guard applyTask == nil else { return }
+        let rows = markedRows
+        let argv = Self.applyArgv(for: rows)
+        if argv.isEmpty { return }
+
+        applyLog = ""
+        recentApplyOutcome = nil
+        pendingAutoremoveConfirmation = false
+        state = .applying
+
+        applyTask = Task { [weak self] in
+            await self?.runApplyPipeline(argv: argv)
+        }
+    }
+
+    /// Cancel an in-flight Apply by sending the active sub-call its
+    /// SIGTERM → SIGKILL sequence. The Apply task still runs to
+    /// completion so the outcome lands in `recentApplyOutcome` and
+    /// the state machine returns to `.idle`.
+    func cancelApply() {
+        inflightHandle?.cancel()
+        // If we're paused on the autoremove confirmation, fail-safe to
+        // No so the pipeline drains and state returns to .idle.
+        if pendingAutoremoveConfirmation {
+            confirmAutoremove(false)
+        }
+    }
+
+    /// View entry point for the post-uninstall autoremove dialog.
+    /// Yes runs `brew autoremove`; No ends the pipeline cleanly.
+    func confirmAutoremove(_ accept: Bool) {
+        guard pendingAutoremoveConfirmation else { return }
+        pendingAutoremoveConfirmation = false
+        autoremoveContinuation?.resume(returning: accept)
+        autoremoveContinuation = nil
+    }
+
+    private func runApplyPipeline(argv: ApplyArgv) async {
+        // Add phase 1: upgrades.
+        if !argv.upgrades.isEmpty {
+            let outcome = await runSubCall(["upgrade"] + argv.upgrades)
+            guard case .success = outcome else {
+                finishApply(outcome: outcome)
+                return
+            }
+        }
+        // Add phase 2: installs.
+        if !argv.installs.isEmpty {
+            let outcome = await runSubCall(["install"] + argv.installs)
+            guard case .success = outcome else {
+                finishApply(outcome: outcome)
+                return
+            }
+        }
+        // Remove phase + autoremove confirmation.
+        let removeRan = !argv.removes.isEmpty
+        if removeRan {
+            let outcome = await runSubCall(["uninstall"] + argv.removes)
+            guard case .success = outcome else {
+                finishApply(outcome: outcome)
+                return
+            }
+            pendingAutoremoveConfirmation = true
+            let accept = await waitForAutoremoveDecision()
+            if accept {
+                let autoOutcome = await runSubCall(["autoremove"])
+                guard case .success = autoOutcome else {
+                    finishApply(outcome: autoOutcome)
+                    return
+                }
+            }
+        }
+        finishApply(outcome: .success)
+    }
+
+    private func runSubCall(_ argv: [String]) async -> ApplyOutcome {
+        let handle = subCallRunner(argv)
+        inflightHandle = handle
+        defer { inflightHandle = nil }
+
+        var outcome: ApplyOutcome = .cancelled
+        for await event in handle.events {
+            switch event {
+            case .output(let piece):
+                applyLog += piece
+            case .finished(let o):
+                outcome = o
+            }
+        }
+        return outcome
+    }
+
+    private func waitForAutoremoveDecision() async -> Bool {
+        await withCheckedContinuation { continuation in
+            self.autoremoveContinuation = continuation
+        }
+    }
+
+    private func finishApply(outcome: ApplyOutcome) {
+        applyTask = nil
+        inflightHandle = nil
+        recentApplyOutcome = outcome
+        state = .idle
+    }
+
+    // MARK: - Default runners
+
+    /// Production sub-call runner: spawns brew via
+    /// `StreamingProcessRunner` with the same brew-path + askpass
+    /// resolution the prior `BrewUpdateManager.apply` used. Streams
+    /// stdout/stderr as they arrive and emits one terminal `.finished`
+    /// event carrying the resolved [ApplyOutcome].
+    nonisolated static let defaultSubCallRunner: SubCallRunner = { argv in
+        let brewPath = BrewDetector.standardSearchPaths.first {
+            FileManager.default.isExecutableFile(atPath: $0)
+        }
+        guard let brewPath else {
+            return failedHandle(reason: "no brew on disk")
+        }
+
+        var env = ProcessInfo.processInfo.environment
+        if let exec = Bundle.main.executableURL {
+            let askpass = exec.deletingLastPathComponent()
+                .appendingPathComponent("steading-askpass").path
+            if FileManager.default.isExecutableFile(atPath: askpass) {
+                env["SUDO_ASKPASS"] = askpass
+            }
+        }
+
+        let handle = StreamingProcessRunner.run(
+            executable: brewPath,
+            arguments: argv,
+            environment: env
+        )
+        let stream = AsyncStream<SubCallEvent> { continuation in
+            Task {
+                for await event in handle.events {
+                    switch event {
+                    case .output(_, let data):
+                        let piece = String(data: data, encoding: .utf8) ?? ""
+                        continuation.yield(.output(piece))
+                    case .exited(let code):
+                        let outcome: ApplyOutcome = (code == 0)
+                            ? .success
+                            : .failed(exitCode: code)
+                        continuation.yield(.finished(outcome))
+                    case .cancelled:
+                        continuation.yield(.finished(.cancelled))
+                    case .failed(let reason):
+                        continuation.yield(.finished(.spawnFailed(reason: reason)))
+                    }
+                }
+                continuation.finish()
+            }
+        }
+        return SubCallHandle(events: stream, cancel: handle.cancel)
+    }
+
+    /// Build a SubCallHandle that emits one immediate
+    /// `.finished(.spawnFailed)` and finishes — used when brew can't
+    /// be located before a sub-call is spawned.
+    private nonisolated static func failedHandle(reason: String) -> SubCallHandle {
+        let stream = AsyncStream<SubCallEvent> { continuation in
+            continuation.yield(.finished(.spawnFailed(reason: reason)))
+            continuation.finish()
+        }
+        return SubCallHandle(events: stream, cancel: {})
+    }
 
     // MARK: - Marking
 
