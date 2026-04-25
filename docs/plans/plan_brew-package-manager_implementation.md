@@ -40,7 +40,7 @@
 
 **Covers:** Phase 1 → "`BrewUpdateManager` narrowing", "New `BrewPackageManager`", "`BrewPackageManagerView` rebuild", "App wiring", and the remaining Tests subsection.
 
-**Status:** in progress
+**Status:** awaiting manual verification
 
 **Changes:**
 - New `app/Steading/Model/BrewPackageManager.swift` — main-actor `@Observable`. Owns: unified package index keyed by full name; `enum SidebarMode { case status, origin, searchResults }`; search text + computed search results; per-row marking state with verb derived from row state at Apply time; tap list + add/remove; Apply pipeline (add phase: `brew upgrade …` then `brew install …`; remove phase: `brew uninstall …`; post-uninstall autoremove confirmation with default-yes; partial-failure halt on first non-zero); pin/unpin verbs (no askpass). Reads `outdated` from `BrewUpdateManager` for upgradable subset and Mark All Upgrades.
@@ -78,6 +78,7 @@
 - 2026-04-25: Refined into 2 sprints. User elected to collapse the model + view + narrowing + wiring work into one user-visible cut (Sprint 2) so the manual SC walkthrough covers everything in one pass. No PR; autonomous between sprints — only stop on blockers or end-of-Sprint-2 manual walkthrough.
 - 2026-04-25: Sprint 1 opened — exploring existing brew-related code to ground the parser + tap-regen design before writing.
 - 2026-04-25: Sprint 1 complete. Landed `BrewIndexParser` + `BrewTapInfoParser` (commit `83d2572`), the post-settle tap-regen step on `BrewUpdateManager` with failure-isolation tests (commit `386dfc9`), and live tests against real brew + a deadlock fix to `defaultRunner` discovered while exercising `tap-info` output (~330 KB exceeded the OS pipe buffer; commit `38f00e8`). Test count went from 137 → 147; all green. Sprint 2 opened — `BrewPackageManager` + view rebuild + narrowing + wiring.
+- 2026-04-25: Sprint 2 code complete. Six commits: `BrewPackageManager` skeleton + pure-helper tests (`b3b3893`), Apply pipeline + autoremove + cancel + state-machine tests (`cd573d3`), pin/unpin verbs + tests (`dc41e38`), index loader + tap add/remove + tests (`e862526`), and the user-visible cut — view rebuild + `BrewUpdateManager` narrowing + app wiring + askpass-env test relocation (`9d98cb4`). Test count 147 → 178 (six removed in `BrewApplyPureTests` deletion, 37 added across new suites). Built app smoke-launches without crashing. Awaiting manual SC walkthrough.
 
 ## Decisions & Notes
 
