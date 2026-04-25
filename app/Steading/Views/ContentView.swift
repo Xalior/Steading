@@ -10,7 +10,8 @@ struct ContentView: View {
             SidebarView(selection: $state.selection)
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260)
         } detail: {
-            detailView
+            detailView(for: state.selection)
+                .id(state.selection ?? CatalogItem.dashboardTag)
         }
         .navigationTitle("Steading")
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -19,12 +20,13 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private var detailView: some View {
-        // Treat both `nil` and the Dashboard sentinel as "show the
-        // dashboard". Any real catalog id routes to its detail view.
-        if let id = appState.selection,
-           id != CatalogItem.dashboardTag,
-           let item = Self.allItems.first(where: { $0.id == id }) {
+    private func detailView(for selection: CatalogItem.ID?) -> some View {
+        // Both `nil` and the Dashboard sentinel route to DashboardView.
+        // Any real catalog id routes to its detail view.
+        if selection == nil || selection == CatalogItem.dashboardTag {
+            DashboardView()
+        } else if let id = selection,
+                  let item = Self.allItems.first(where: { $0.id == id }) {
             switch item.kind {
             case .builtIn:
                 if let runner = BuiltInServiceRegistry.runner(for: item.id) {
