@@ -43,6 +43,21 @@ final class BrewUpdateManager {
     /// env entirely).
     typealias AskpassHelperResolver = @Sendable () -> String?
 
+    /// Dependency boundary for locating the on-disk Steading-owned
+    /// tap-cache file. Default lives under `~/Library/Caches/com.xalior.Steading/`;
+    /// tests inject a sandbox path. Returns `nil` to skip the regen
+    /// write entirely (used by tests that only want to assert the
+    /// regen pipeline doesn't push state to `.failed`).
+    typealias TapIndexCachePathResolver = @Sendable () -> URL?
+
+    /// Dependency boundary for the tap-cache write step. Default uses
+    /// `Data.write(to:options: .atomic)` — same-directory tmp file +
+    /// atomic rename, so a partial write cannot replace the prior
+    /// cache on disk. Tests inject an in-memory accumulator (whose
+    /// store-into-actor side effect needs the async-throwing shape;
+    /// a synchronous default closure satisfies the async signature).
+    typealias TapIndexWriter = @Sendable (URL, Data) async throws -> Void
+
     /// Enablement decisions for the Brew Package Manager window's
     /// controls. Pure — derived from state and counts.
     struct Buttons: Equatable, Sendable {
@@ -103,6 +118,8 @@ final class BrewUpdateManager {
     private let notifier: BannerNotifier
     private let brewPathResolver: BrewPathResolver
     private let askpassHelperResolver: AskpassHelperResolver
+    private let tapIndexCachePathResolver: TapIndexCachePathResolver
+    private let tapIndexWriter: TapIndexWriter
     /// Count from the most recent successful settlement. Dock badge
     /// and menu bar label derive from this so they don't flicker off
     /// while a check is in flight.
@@ -120,15 +137,19 @@ final class BrewUpdateManager {
          clock: @escaping @Sendable () -> Date = { Date() },
          notifier: BannerNotifier = BrewUpdateManager.defaultNotifier,
          brewPathResolver: @escaping BrewPathResolver = BrewUpdateManager.defaultBrewPathResolver,
-         askpassHelperResolver: @escaping AskpassHelperResolver = BrewUpdateManager.defaultAskpassHelperResolver) {
-        self.preferences           = preferences
-        self.runner                = runner
-        self.sleep                 = sleep
-        self.clock                 = clock
-        self.notifier              = notifier
-        self.brewPathResolver      = brewPathResolver
-        self.askpassHelperResolver = askpassHelperResolver
-        self.lastNotifyBannerPref  = preferences.notifySystemBanner
+         askpassHelperResolver: @escaping AskpassHelperResolver = BrewUpdateManager.defaultAskpassHelperResolver,
+         tapIndexCachePathResolver: @escaping TapIndexCachePathResolver = BrewUpdateManager.defaultTapIndexCachePathResolver,
+         tapIndexWriter: @escaping TapIndexWriter = BrewUpdateManager.defaultTapIndexWriter) {
+        self.preferences               = preferences
+        self.runner                    = runner
+        self.sleep                     = sleep
+        self.clock                     = clock
+        self.notifier                  = notifier
+        self.brewPathResolver          = brewPathResolver
+        self.askpassHelperResolver     = askpassHelperResolver
+        self.tapIndexCachePathResolver = tapIndexCachePathResolver
+        self.tapIndexWriter            = tapIndexWriter
+        self.lastNotifyBannerPref      = preferences.notifySystemBanner
     }
 
     // MARK: - Lifecycle
@@ -208,6 +229,7 @@ final class BrewUpdateManager {
             switch outcome {
             case .success(let packages):
                 settle(success: packages)
+                await regenerateTapIndex()
                 return
             case .failFast(let message):
                 settle(failed: message)
@@ -303,6 +325,54 @@ final class BrewUpdateManager {
         case .noop:
             break
         }
+    }
+
+    // MARK: - Tap-cache regen
+    //
+    // Soft post-settle step that keeps `~/Library/Caches/com.xalior.Steading/tap-index.json`
+    // in step with brew's own JWS cache. Spawns `brew tap-info`, drops
+    // `homebrew/core` / `homebrew/cask`, and runs `brew info --json=v2`
+    // against the union of remaining `formula_names` + `cask_tokens`.
+    //
+    // Failure-isolated by contract: nothing this method does can push
+    // the brew-updater state machine into `.failed` or trigger retry
+    // back-off. Every failure path returns silently. The atomic-write
+    // discipline (`Data.write(.atomic)` in the default writer) means a
+    // partial write cannot replace the prior cache on disk.
+    private func regenerateTapIndex() async {
+        let tapInfoResult = await runner(["tap-info", "--json", "--installed"])
+        guard case let .ran(tapExit, tapStdout, _) = tapInfoResult, tapExit == 0 else {
+            return
+        }
+
+        let taps: [BrewTapInfo]
+        do {
+            taps = try BrewTapInfoParser.parse(tapStdout)
+        } catch {
+            return
+        }
+
+        let userTaps = BrewTapInfoParser.userTaps(taps)
+        let packageNames = BrewTapInfoParser.packageNames(in: userTaps)
+
+        let document: Data
+        if packageNames.isEmpty {
+            document = #"{"formulae":[],"casks":[]}"#.data(using: .utf8) ?? Data()
+        } else {
+            let infoResult = await runner(["info", "--json=v2"] + packageNames)
+            guard case let .ran(infoExit, infoStdout, _) = infoResult, infoExit == 0 else {
+                return
+            }
+            do {
+                _ = try BrewIndexParser.parseInfoEnvelope(infoStdout)
+            } catch {
+                return
+            }
+            document = infoStdout
+        }
+
+        guard let path = tapIndexCachePathResolver() else { return }
+        try? await tapIndexWriter(path, document)
     }
 
     private func terseStderr(_ stderr: Data, fallback: String) -> String {
@@ -512,6 +582,31 @@ final class BrewUpdateManager {
         let candidate = exec.deletingLastPathComponent()
             .appendingPathComponent("steading-askpass").path
         return FileManager.default.isExecutableFile(atPath: candidate) ? candidate : nil
+    }
+
+    /// Default tap-cache path: `~/Library/Caches/com.xalior.Steading/tap-index.json`.
+    /// Creates the containing directory on demand; returns `nil` if
+    /// neither the user caches dir nor the Steading subdir is
+    /// accessible (regen then bails silently).
+    nonisolated static let defaultTapIndexCachePathResolver: TapIndexCachePathResolver = {
+        let fm = FileManager.default
+        guard let cachesURL = fm.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        let dir = cachesURL.appendingPathComponent("com.xalior.Steading", isDirectory: true)
+        do {
+            try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        } catch {
+            return nil
+        }
+        return dir.appendingPathComponent("tap-index.json")
+    }
+
+    /// Default tap-cache writer: `Data.write(.atomic)` does temp-file
+    /// in same dir + fsync + rename, so a partial write cannot replace
+    /// the prior cache file.
+    nonisolated static let defaultTapIndexWriter: TapIndexWriter = { url, data in
+        try data.write(to: url, options: [.atomic])
     }
 
     // MARK: - Default runner
