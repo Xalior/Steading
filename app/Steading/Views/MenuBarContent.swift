@@ -19,8 +19,18 @@ struct MenuBarContent: View {
             Divider()
 
             Button {
-                dismiss()
+                // Order matters: while the popover is still up we're
+                // active, so activate() and makeKeyAndOrderFront land
+                // cleanly. dismiss() last — once the popover closes
+                // focus would otherwise snap back to whatever was
+                // frontmost before, and macOS's focus-stealing
+                // protection would reject a late activate().
                 openWindow(id: "main")
+                NSApplication.shared.activate(ignoringOtherApps: true)
+                NSApp.windows.first(where: {
+                    $0.identifier?.rawValue == "main"
+                })?.makeKeyAndOrderFront(nil)
+                dismiss()
             } label: {
                 Label("Open", systemImage: "macwindow")
                     .frame(maxWidth: .infinity, alignment: .leading)
