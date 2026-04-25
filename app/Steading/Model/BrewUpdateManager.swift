@@ -615,6 +615,12 @@ final class BrewUpdateManager {
     /// `.binaryNotFound` when no standard path is executable or when
     /// Process.run() throws. Otherwise returns `.ran(...)` with the
     /// real exit code and captured output.
+    ///
+    /// Both pipes are drained on background tasks running concurrently
+    /// with `waitUntilExit()`. Reading sequentially after exit would
+    /// deadlock against the OS pipe buffer (~64 KB) for any subprocess
+    /// whose stdout exceeds that — `brew tap-info --json --installed`
+    /// in particular emits hundreds of KB of JSON.
     nonisolated static let defaultRunner: Runner = { arguments in
         guard let brewPath = BrewDetector.standardSearchPaths.first(where: {
             FileManager.default.isExecutableFile(atPath: $0)
@@ -635,9 +641,15 @@ final class BrewUpdateManager {
             } catch {
                 return .binaryNotFound(reason: "spawn failed: \(error.localizedDescription)")
             }
+            let outTask = Task.detached(priority: .userInitiated) {
+                (try? outPipe.fileHandleForReading.readToEnd()) ?? Data()
+            }
+            let errTask = Task.detached(priority: .userInitiated) {
+                (try? errPipe.fileHandleForReading.readToEnd()) ?? Data()
+            }
             process.waitUntilExit()
-            let outData = (try? outPipe.fileHandleForReading.readToEnd()) ?? Data()
-            let errData = (try? errPipe.fileHandleForReading.readToEnd()) ?? Data()
+            let outData = await outTask.value
+            let errData = await errTask.value
             return .ran(exitCode: process.terminationStatus, stdout: outData, stderr: errData)
         }.value
     }
