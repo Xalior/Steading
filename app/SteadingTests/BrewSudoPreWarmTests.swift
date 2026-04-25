@@ -2,43 +2,28 @@ import Testing
 import Foundation
 @testable import Steading
 
-/// Stage-2 apply pipeline: the manager spawns brew with
-/// `SUDO_ASKPASS` pointing at the injectable helper; no password is
-/// collected up front. Tests use a fake brew that records its env.
+/// Stage-2 askpass plumbing for the Apply pipeline. After the
+/// `BrewUpdateManager` narrowing, the Apply pipeline lives on
+/// `BrewPackageManager` — but the env-injection contract is the
+/// same: every brew sub-call inherits `SUDO_ASKPASS` pointing at the
+/// bundled helper if one is available, and omits the variable when
+/// no helper is present so brew falls back to its terminal prompt.
 @Suite("Brew apply — stage 2")
 @MainActor
 struct BrewSudoPreWarmTests {
-
-    private func scratchPreferences() -> (PreferencesStore, String) {
-        let suite = "com.xalior.Steading.tests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defaults.removePersistentDomain(forName: suite)
-        return (PreferencesStore(defaults: defaults), suite)
-    }
-
-    private func teardown(_ suite: String) {
-        UserDefaults().removePersistentDomain(forName: suite)
-    }
-
-    private let fastSleep: BrewUpdateManager.Sleeper = { duration in
-        if duration <= .seconds(900) { return }
-        try await Task.sleep(for: .seconds(86_400 * 365))
-    }
-
-    private let noopNotifier = BrewUpdateManager.BannerNotifier(
-        post: { _ in }, removeDelivered: { }
-    )
 
     private func installFakeBrew(envLog: URL) throws -> URL {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("steading-tests-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let brew = dir.appendingPathComponent("brew")
+        // Quote $SUDO_ASKPASS so an unset value records as
+        // "SUDO_ASKPASS=" rather than reading like a no-op.
         let body = """
         #!/bin/sh
         {
           echo "ARGS=$*"
-          echo "SUDO_ASKPASS=$SUDO_ASKPASS"
+          echo "SUDO_ASKPASS=${SUDO_ASKPASS}"
         } > \(envLog.path)
         exit 0
         """
@@ -58,27 +43,31 @@ struct BrewSudoPreWarmTests {
         }
     }
 
+    private func upgradableRow(_ token: String) -> BrewPackageManager.PackageRow {
+        let entry = BrewIndexEntry(
+            token: token, fullToken: token,
+            tap: "homebrew/core", desc: nil, kind: .formula
+        )
+        return .init(entry: entry, isInstalled: true, isOutdated: true, isPinned: false)
+    }
+
     @Test("apply sets SUDO_ASKPASS on brew's env when a helper is available")
     func apply_injects_askpass_env() async throws {
-        let (prefs, suite) = scratchPreferences()
-        defer { teardown(suite) }
-
         let envLog = FileManager.default.temporaryDirectory
             .appendingPathComponent("steading-stage2-envlog-\(UUID().uuidString).txt")
         let fakeBrew = try installFakeBrew(envLog: envLog)
         let helperPath = "/opt/steading-test/does-not-exist/steading-askpass"
 
-        let manager = BrewUpdateManager(
-            preferences: prefs, sleep: fastSleep, clock: { Date() },
-            notifier: noopNotifier,
+        let runner = BrewPackageManager.defaultSubCallRunner(
             brewPathResolver: { fakeBrew.path },
             askpassHelperResolver: { helperPath }
         )
-        let pkg = OutdatedPackage(name: "zulu", installedVersion: "1",
-                                  availableVersion: "2", kind: .cask)
+        let manager = BrewPackageManager(subCallRunner: runner)
+        manager.setIndex(rows: [upgradableRow("zulu")], taps: [])
+        manager.mark("zulu", true)
 
-        manager.apply([pkg])
-        await waitUntil { manager.state != .applying && manager.recentApplyOutcome != nil }
+        manager.apply()
+        await waitUntil { manager.state == .idle && manager.recentApplyOutcome != nil }
 
         let raw = try String(contentsOf: envLog, encoding: .utf8)
         #expect(raw.contains("SUDO_ASKPASS=\(helperPath)"),
@@ -89,27 +78,25 @@ struct BrewSudoPreWarmTests {
 
     @Test("apply omits SUDO_ASKPASS when no helper is available")
     func apply_omits_askpass_when_no_helper() async throws {
-        let (prefs, suite) = scratchPreferences()
-        defer { teardown(suite) }
-
         let envLog = FileManager.default.temporaryDirectory
             .appendingPathComponent("steading-stage2-envlog-\(UUID().uuidString).txt")
         let fakeBrew = try installFakeBrew(envLog: envLog)
 
-        let manager = BrewUpdateManager(
-            preferences: prefs, sleep: fastSleep, clock: { Date() },
-            notifier: noopNotifier,
+        let runner = BrewPackageManager.defaultSubCallRunner(
             brewPathResolver: { fakeBrew.path },
             askpassHelperResolver: { nil }
         )
-        let pkg = OutdatedPackage(name: "zulu", installedVersion: "1",
-                                  availableVersion: "2", kind: .cask)
+        let manager = BrewPackageManager(subCallRunner: runner)
+        manager.setIndex(rows: [upgradableRow("zulu")], taps: [])
+        manager.mark("zulu", true)
 
-        manager.apply([pkg])
-        await waitUntil { manager.state != .applying && manager.recentApplyOutcome != nil }
+        manager.apply()
+        await waitUntil { manager.state == .idle && manager.recentApplyOutcome != nil }
 
         let raw = try String(contentsOf: envLog, encoding: .utf8)
-        #expect(raw.contains("SUDO_ASKPASS=\n") || raw.contains("SUDO_ASKPASS="),
+        // The fake brew echoes "SUDO_ASKPASS=${SUDO_ASKPASS}" — when
+        // the variable is unset that prints as the empty string.
+        #expect(raw.contains("SUDO_ASKPASS=\n"),
                 "SUDO_ASKPASS should be empty when no helper is available. Log:\n\(raw)")
     }
 }

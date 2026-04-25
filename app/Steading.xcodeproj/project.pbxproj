@@ -14,7 +14,6 @@
 		04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */; };
 		051FB78D75D68C7C13D40855 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE58958345FEE2847E8E57AE /* WelcomeView.swift */; };
 		08FA41D5EA90086176A8F033 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C68F7A05734954EA423C2B6 /* AppDelegate.swift */; };
-		11BCE8CED4F5A9C92CD19BED /* BrewApplyPureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86D9EE2616DF441FED03FA77 /* BrewApplyPureTests.swift */; };
 		129B589725293E7C791250B6 /* CatalogItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F631AFF0C04F2D5533E126C /* CatalogItem.swift */; };
 		13CB00A9DB893D37E7E9F62E /* CatalogDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2DB46FC31752B14A6A9B387 /* CatalogDetailView.swift */; };
 		17D2896D50A816EFBDD95128 /* PrivHelperAllowlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EFEB5D383616F979F1C63F /* PrivHelperAllowlist.swift */; };
@@ -169,7 +168,6 @@
 		81F9C7A2DBF73EDA4A98A518 /* AppStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTests.swift; sourceTree = "<group>"; };
 		8284E9C8D434A8B773FB43AC /* BrewPinTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewPinTests.swift; sourceTree = "<group>"; };
 		85A62D299EE809059CA13083 /* BrewSudoPreWarmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewSudoPreWarmTests.swift; sourceTree = "<group>"; };
-		86D9EE2616DF441FED03FA77 /* BrewApplyPureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewApplyPureTests.swift; sourceTree = "<group>"; };
 		8722163EF36F9FD647CD70CB /* BrewPackageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewPackageManager.swift; sourceTree = "<group>"; };
 		876291874D491DF81F75AFB0 /* BrewPackageManagerRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewPackageManagerRefreshTests.swift; sourceTree = "<group>"; };
 		8AAF16B2DF90D69AD1CF6BD3 /* AskpassServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskpassServiceTests.swift; sourceTree = "<group>"; };
@@ -305,7 +303,6 @@
 			children = (
 				81F9C7A2DBF73EDA4A98A518 /* AppStateTests.swift */,
 				8AAF16B2DF90D69AD1CF6BD3 /* AskpassServiceTests.swift */,
-				86D9EE2616DF441FED03FA77 /* BrewApplyPureTests.swift */,
 				1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */,
 				68961B44CFC5980E5DDEC556 /* BrewIndexLiveTests.swift */,
 				FACA65E91C31773D60EC864D /* BrewIndexParserTests.swift */,
@@ -591,7 +588,6 @@
 			files = (
 				C11D86FFA26BB72DE065191C /* AppStateTests.swift in Sources */,
 				BEBFA2E4D9DD0CD4C47DEA4C /* AskpassServiceTests.swift in Sources */,
-				11BCE8CED4F5A9C92CD19BED /* BrewApplyPureTests.swift in Sources */,
 				A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */,
 				DBF6D4C8B0B5785FCFC0AA1F /* BrewIndexLiveTests.swift in Sources */,
 				ABF71C144FD8FAE9180ED47C /* BrewIndexParserTests.swift in Sources */,

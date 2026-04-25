@@ -45,8 +45,6 @@ extension BrewUpdateManager {
             return "Checking…"
         case .failed(let message):
             return "Last check failed: \(message)"
-        case .applying:
-            return "Upgrading…"
         }
     }
 }

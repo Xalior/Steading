@@ -1,229 +1,364 @@
 import SwiftUI
 import AppKit
 
+/// Brew Package Manager window. Three-pane layout (sidebar / list /
+/// details) bound to `BrewPackageManager` for the package universe,
+/// marking, Apply pipeline, and pin/unpin verbs; reads from
+/// `BrewUpdateManager` for the upgradable subset and the Check Now
+/// invocation. The askpass sheet, the close-while-applying
+/// confirmation, the post-uninstall autoremove confirmation, and the
+/// streaming-output disclosure are all surfaced through the new
+/// manager's state.
 struct BrewPackageManagerView: View {
-    @Environment(BrewUpdateManager.self) private var manager
+
+    @Environment(BrewUpdateManager.self) private var brewUpdates
+    @Environment(BrewPackageManager.self) private var packages
     @Environment(AskpassService.self) private var askpass
     @Environment(\.dismissWindow) private var dismissWindow
 
-    @State private var marked: Set<String> = []
     @State private var detailsShown: Bool = false
     @State private var closeWarning: CloseReason?
-
-    // Password modal is driven entirely by `askpass.pendingRequest` —
-    // the modal appears only when the bundled `steading-askpass`
-    // helper calls into the GUI over XPC, not when Apply is clicked.
     @State private var passwordInput = ""
+    @State private var newTapText = ""
+    @State private var selectedRowID: String?
+    @State private var sortOrder: [KeyPathComparator<BrewPackageManager.PackageRow>] = [
+        KeyPathComparator(\.entry.token)
+    ]
 
-    /// What triggered the close attempt — drives the Cancel-and-Close
-    /// handler's follow-up action.
     enum CloseReason: Identifiable {
         case closeWindow
         case quitApp
         var id: Int { self == .closeWindow ? 0 : 1 }
     }
 
-    private var buttons: BrewUpdateManager.Buttons {
-        BrewUpdateManager.buttons(
-            state: manager.state,
-            markedCount: marked.intersection(Set(manager.outdated.map(\.name))).count,
-            outdatedCount: manager.outdated.count
-        )
-    }
-
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            Divider()
-            packageList
-            Divider()
-            controls
-            if shouldShowProgressArea {
-                Divider()
-                progressArea
-            }
-        }
-        .frame(minWidth: 620, idealWidth: 760, minHeight: 440, idealHeight: 560)
-        .background(CloseInterceptor(shouldWarn: { manager.state == .applying },
-                                     onAttemptedClose: { closeWarning = .closeWindow }))
-        .confirmationDialog(
-            "Cancel upgrade in progress?",
-            isPresented: Binding(
-                get: { closeWarning != nil },
-                set: { if !$0 { closeWarning = nil } }
-            ),
-            titleVisibility: .visible,
-            presenting: closeWarning
-        ) { reason in
-            Button("Keep Running", role: .cancel) { closeWarning = nil }
-            Button("Cancel and Close Anyway", role: .destructive) {
-                manager.cancelApply()
-                askpass.respondCancel()
-                closeWarning = nil
-                switch reason {
-                case .closeWindow:
-                    dismissWindow(id: "brew-package-manager")
-                case .quitApp:
-                    NSApp.reply(toApplicationShouldTerminate: true)
+        @Bindable var packages = packages
+
+        coreLayout(packages: Bindable(packages))
+            .toolbar { toolbarContents(packages: packages) }
+            .searchable(text: $packages.searchText, prompt: "Search packages")
+            .onChange(of: packages.searchText) { _, newValue in
+                if !newValue.isEmpty {
+                    packages.sidebarMode = .searchResults
                 }
             }
-        } message: { _ in
-            Text("Stopping an upgrade midway is equivalent to pressing Ctrl-C during `brew upgrade`. Packages currently being installed may be left in a partial or broken state, and your Homebrew installation may need manual repair. This is strongly advised against.")
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .steadingAppQuitDuringApply)) { _ in
-            closeWarning = .quitApp
-        }
-        .sheet(item: Binding(
-            get: { askpass.pendingRequest },
-            set: { new in
-                // If the sheet is dismissed for any reason without the
-                // user clicking Continue, treat it as cancel.
-                if new == nil, askpass.pendingRequest != nil {
-                    askpass.respondCancel()
-                }
+            .task(id: brewUpdates.outdated) {
+                packages.refresh(outdated: brewUpdates.outdated)
             }
-        )) { _ in
-            passwordModal
-        }
-    }
-
-    // MARK: - Subviews
-
-    private var header: some View {
-        HStack {
-            Text(headerText)
-                .font(.headline)
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-    }
-
-    private var headerText: String {
-        BrewUpdateManager.statusStripText(for: manager.state)
-            ?? (manager.outdated.isEmpty ? "No updates pending" : "\(manager.outdated.count) pending updates")
+            .modifier(WindowChromeModifier(
+                packages: packages,
+                askpass: askpass,
+                dismissWindow: dismissWindow,
+                closeWarning: $closeWarning,
+                passwordModal: passwordModal
+            ))
+            .onReceive(NotificationCenter.default.publisher(for: .steadingAppQuitDuringApply)) { _ in
+                closeWarning = .quitApp
+            }
     }
 
     @ViewBuilder
-    private var packageList: some View {
-        if case .failed(let message) = manager.state {
-            VStack(spacing: 12) {
-                Text("Last check failed: \(message)")
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
-                Button("Check Now") { manager.check() }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
-        } else if manager.outdated.isEmpty {
-            VStack(spacing: 8) {
-                if case .checking = manager.state {
-                    ProgressView()
-                    Text("Checking…").foregroundStyle(.secondary)
-                } else {
-                    Image(systemName: "checkmark.seal")
-                        .font(.largeTitle)
-                        .foregroundStyle(.secondary)
-                    Text("No updates pending").foregroundStyle(.secondary)
+    private func coreLayout(packages: Bindable<BrewPackageManager>) -> some View {
+        HSplitView {
+            sidebar(packages: packages)
+                .frame(minWidth: 200, idealWidth: 220)
+
+            VSplitView {
+                packageListPane(packages: packages.wrappedValue)
+                    .frame(minHeight: 220)
+
+                if shouldShowProgressArea {
+                    progressArea
+                        .frame(minHeight: 120)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
-        } else {
-            List {
-                ForEach(manager.outdated, id: \.name) { pkg in
-                    packageRow(pkg)
-                }
+            .frame(minWidth: 380)
+
+            detailsPane(packages: packages.wrappedValue)
+                .frame(minWidth: 220, idealWidth: 260)
+        }
+        .frame(minWidth: 900, idealWidth: 1100, minHeight: 540, idealHeight: 640)
+    }
+
+    // MARK: - Sidebar
+
+    @ViewBuilder
+    private func sidebar(packages: Bindable<BrewPackageManager>) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Picker("Mode", selection: packages.sidebarMode) {
+                Text("Status").tag(BrewPackageManager.SidebarMode.status)
+                Text("Origin").tag(BrewPackageManager.SidebarMode.origin)
+                Text("Search Results").tag(BrewPackageManager.SidebarMode.searchResults)
             }
-            .listStyle(.plain)
+            .pickerStyle(.segmented)
+            .padding(8)
+
+            Divider()
+
+            switch packages.wrappedValue.sidebarMode {
+            case .status:
+                statusModeList(packages: packages)
+            case .origin:
+                originModeList(packages: packages)
+            case .searchResults:
+                searchResultsHint(packages: packages.wrappedValue)
+            }
+
+            Spacer()
+        }
+        .background(.thinMaterial)
+    }
+
+    private func statusModeList(packages: Bindable<BrewPackageManager>) -> some View {
+        List(BrewPackageManager.StatusFilter.allCases, id: \.self,
+             selection: packages.statusFilter) { filter in
+            Text(filter.label)
+                .tag(filter)
+        }
+        .listStyle(.sidebar)
+    }
+
+    private func originModeList(packages: Bindable<BrewPackageManager>) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            List(packages.wrappedValue.taps, id: \.name,
+                 selection: packages.originTap) { tap in
+                HStack {
+                    Text(tap.name)
+                        .truncationMode(.middle)
+                    Spacer()
+                    if tap.name != "homebrew/core" && tap.name != "homebrew/cask" {
+                        Button(role: .destructive) {
+                            packages.wrappedValue.removeTap(tap.name,
+                                                            outdated: brewUpdates.outdated)
+                        } label: {
+                            Image(systemName: "minus.circle")
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
+                .tag(tap.name)
+            }
+            .listStyle(.sidebar)
+
+            Divider()
+
+            HStack(spacing: 6) {
+                TextField("user/repo", text: $newTapText)
+                    .textFieldStyle(.roundedBorder)
+                Button("Add") {
+                    let trimmed = newTapText
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return }
+                    packages.wrappedValue.addTap(trimmed, outdated: brewUpdates.outdated)
+                    newTapText = ""
+                }
+                .disabled(newTapText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(8)
         }
     }
 
-    private func packageRow(_ pkg: OutdatedPackage) -> some View {
-        HStack(spacing: 12) {
-            Toggle(isOn: Binding(
-                get: { marked.contains(pkg.name) },
-                set: { isOn in
-                    if isOn { marked.insert(pkg.name) } else { marked.remove(pkg.name) }
-                }
-            )) { EmptyView() }
-                .toggleStyle(.checkbox)
-                .disabled(!buttons.perRowEnabled)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(pkg.name).font(.body.weight(.semibold))
-                Text("\(pkg.installedVersion) → \(pkg.availableVersion)")
+    private func searchResultsHint(packages: BrewPackageManager) -> some View {
+        VStack(spacing: 8) {
+            if packages.searchText.isEmpty {
+                Text("Type a search term in the toolbar to filter the package list by name and description.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                    .monospacedDigit()
+                    .multilineTextAlignment(.center)
+                    .padding()
+            } else {
+                Text("Showing matches for")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("\u{201C}\(packages.searchText)\u{201D}")
+                    .font(.body.weight(.semibold))
+                Text("\(packages.filteredRows.count) result\(packages.filteredRows.count == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-
             Spacer()
-
-            Text(pkg.kind == .formula ? "Formula" : "Cask")
-                .font(.caption)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(
-                    Capsule().fill(pkg.kind == .formula
-                                   ? Color.blue.opacity(0.15)
-                                   : Color.purple.opacity(0.15))
-                )
-                .foregroundStyle(pkg.kind == .formula ? .blue : .purple)
         }
-        .padding(.vertical, 2)
+        .padding(8)
     }
 
-    private var controls: some View {
-        HStack(spacing: 8) {
-            Button("Mark All Upgrades") {
-                marked = Set(manager.outdated.map(\.name))
+    // MARK: - Package list
+
+    @ViewBuilder
+    private func packageListPane(packages: BrewPackageManager) -> some View {
+        let displayed = packages.filteredRows.sorted(using: sortOrder)
+        Table(displayed, selection: $selectedRowID, sortOrder: $sortOrder) {
+            TableColumn("✓") { row in
+                Toggle(isOn: Binding(
+                    get: { packages.marked.contains(row.id) },
+                    set: { packages.mark(row.id, $0) }
+                )) { EmptyView() }
+                    .toggleStyle(.checkbox)
+                    .disabled(!buttonsState(packages: packages).perRowEnabled)
             }
-            .disabled(!buttons.markAllEnabled)
+            .width(28)
 
-            Button("Check Now") { manager.check() }
-                .disabled(!buttons.checkNowEnabled)
-
-            Spacer()
-
-            if buttons.cancelEnabled {
-                Button("Cancel", role: .destructive) {
-                    manager.cancelApply()
-                    askpass.respondCancel()
+            TableColumn("Name", value: \.entry.token) { row in
+                HStack(spacing: 6) {
+                    Text(row.entry.token)
+                    if row.isPinned {
+                        Image(systemName: "pin.fill")
+                            .foregroundStyle(.orange)
+                            .font(.caption)
+                    }
                 }
             }
 
-            Button("Apply") {
-                let toApply = manager.outdated.filter { marked.contains($0.name) }
-                manager.apply(toApply)
+            TableColumn("Kind", value: \.entry.kind.rawValue) { row in
+                Text(row.entry.kind == .formula ? "Formula" : "Cask")
+                    .font(.caption)
+                    .foregroundStyle(row.entry.kind == .formula ? .blue : .purple)
             }
-            .keyboardShortcut(.defaultAction)
-            .disabled(!buttons.applyEnabled)
+            .width(60)
+
+            TableColumn("Tap", value: \.entry.tap) { row in
+                Text(row.entry.tap)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            TableColumn("Status") { row in
+                Text(rowStatusText(row))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .width(90)
         }
-        .padding(12)
+        .contextMenu(forSelectionType: String.self) { selection in
+            if let id = selection.first,
+               let row = packages.rows.first(where: { $0.id == id }),
+               row.entry.kind == .formula,
+               row.isInstalled {
+                if row.isPinned {
+                    Button("Unpin") { packages.unpin(row.entry.token) }
+                } else {
+                    Button("Pin") { packages.pin(row.entry.token) }
+                }
+            }
+        }
     }
 
+    private func rowStatusText(_ row: BrewPackageManager.PackageRow) -> String {
+        if !row.isInstalled { return "not installed" }
+        if row.isOutdated { return "upgradable" }
+        if row.isPinned { return "pinned" }
+        return "installed"
+    }
+
+    // MARK: - Details pane
+
+    @ViewBuilder
+    private func detailsPane(packages: BrewPackageManager) -> some View {
+        if let id = selectedRowID,
+           let row = packages.rows.first(where: { $0.id == id }) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(row.entry.token)
+                    .font(.title3.weight(.semibold))
+
+                Text(row.entry.fullToken)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+
+                Divider()
+
+                row.entry.desc.map { desc in
+                    Text(desc)
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Divider()
+
+                LabeledContent("Tap") {
+                    Text(row.entry.tap).foregroundStyle(.secondary)
+                }
+                LabeledContent("Kind") {
+                    Text(row.entry.kind == .formula ? "Formula" : "Cask")
+                        .foregroundStyle(.secondary)
+                }
+                LabeledContent("Installed") {
+                    Text(row.isInstalled ? "Yes" : "No")
+                        .foregroundStyle(.secondary)
+                }
+                LabeledContent("Pinned") {
+                    Text(row.isPinned ? "Yes" : "No")
+                        .foregroundStyle(.secondary)
+                }
+                LabeledContent("Upgradable") {
+                    Text(row.isOutdated ? "Yes" : "No")
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            VStack {
+                Spacer()
+                Text("Select a package")
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private func toolbarContents(packages: BrewPackageManager) -> some ToolbarContent {
+        let buttons = buttonsState(packages: packages)
+
+        ToolbarItem {
+            Button("Mark All Upgrades") { packages.markAllUpgrades() }
+                .disabled(!buttons.markAllEnabled)
+        }
+        ToolbarItem {
+            Button("Check Now") { brewUpdates.check() }
+                .disabled(!buttons.checkNowEnabled)
+        }
+        ToolbarItem {
+            if buttons.cancelEnabled {
+                Button("Cancel", role: .destructive) {
+                    packages.cancelApply()
+                    askpass.respondCancel()
+                }
+            } else {
+                Button("Apply") { packages.apply() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!buttons.applyEnabled)
+            }
+        }
+    }
+
+    // MARK: - Progress / streaming output
+
     private var shouldShowProgressArea: Bool {
-        if case .applying = manager.state { return true }
-        return manager.recentApplyOutcome != nil
+        packages.state == .applying || packages.recentApplyOutcome != nil
     }
 
     @ViewBuilder
     private var progressArea: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                if case .applying = manager.state {
+                if packages.state == .applying {
                     ProgressView()
                         .progressViewStyle(.linear)
                         .frame(maxWidth: .infinity)
-                } else if let outcome = manager.recentApplyOutcome {
+                } else if let outcome = packages.recentApplyOutcome {
                     outcomeIndicator(for: outcome)
                 }
             }
 
             DisclosureGroup(isExpanded: $detailsShown) {
                 ScrollView {
-                    Text(manager.applyLog.isEmpty ? "(no output yet)" : manager.applyLog)
+                    Text(packages.applyLog.isEmpty ? "(no output yet)" : packages.applyLog)
                         .font(.system(.caption, design: .monospaced))
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -244,21 +379,31 @@ struct BrewPackageManagerView: View {
     }
 
     @ViewBuilder
-    private func outcomeIndicator(for outcome: BrewUpdateManager.ApplyOutcome) -> some View {
+    private func outcomeIndicator(for outcome: BrewPackageManager.ApplyOutcome) -> some View {
         switch outcome {
         case .success:
-            Label("Upgrade complete.", systemImage: "checkmark.circle.fill")
+            Label("Pipeline complete.", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
         case .failed(let code):
-            Label("brew upgrade exited \(code).", systemImage: "xmark.circle.fill")
+            Label("brew exited \(code).", systemImage: "xmark.circle.fill")
                 .foregroundStyle(.red)
         case .cancelled:
-            Label("Last upgrade canceled.", systemImage: "stop.circle.fill")
+            Label("Pipeline canceled.", systemImage: "stop.circle.fill")
                 .foregroundStyle(.orange)
         case .spawnFailed(let reason):
             Label("Could not start brew: \(reason)", systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
         }
+    }
+
+    // MARK: - Buttons
+
+    private func buttonsState(packages: BrewPackageManager) -> BrewPackageManager.Buttons {
+        BrewPackageManager.buttons(
+            state: packages.state,
+            markedCount: packages.marked.count,
+            upgradableCount: packages.upgradableCount
+        )
     }
 
     // MARK: - Password modal
@@ -279,7 +424,7 @@ struct BrewPackageManagerView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Administrator password required")
                 .font(.headline)
-            Text("brew is asking for an administrator password to finish the current upgrade. Your password is used once and not stored.")
+            Text("brew is asking for an administrator password to finish the current sub-call. Your password is used once and not stored.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -301,12 +446,110 @@ struct BrewPackageManagerView: View {
     }
 }
 
+// MARK: - Window chrome modifier
+
+/// Wraps the close-while-applying confirmation, the autoremove
+/// confirmation, the askpass sheet, and the close-attempt
+/// `CloseInterceptor` into a single `ViewModifier` so the main view
+/// body stays inside the SwiftUI type-checker's tractability budget.
+private struct WindowChromeModifier: ViewModifier {
+    let packages: BrewPackageManager
+    let askpass: AskpassService
+    let dismissWindow: DismissWindowAction
+    @Binding var closeWarning: BrewPackageManagerView.CloseReason?
+    let passwordModal: AnyView
+
+    init(packages: BrewPackageManager,
+         askpass: AskpassService,
+         dismissWindow: DismissWindowAction,
+         closeWarning: Binding<BrewPackageManagerView.CloseReason?>,
+         passwordModal: some View) {
+        self.packages = packages
+        self.askpass = askpass
+        self.dismissWindow = dismissWindow
+        self._closeWarning = closeWarning
+        self.passwordModal = AnyView(passwordModal)
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .background(CloseInterceptor(
+                shouldWarn: { packages.state == .applying },
+                onAttemptedClose: { closeWarning = .closeWindow }
+            ))
+            .confirmationDialog(
+                "Cancel pipeline in progress?",
+                isPresented: Binding(
+                    get: { closeWarning != nil },
+                    set: { if !$0 { closeWarning = nil } }
+                ),
+                titleVisibility: .visible,
+                presenting: closeWarning
+            ) { reason in
+                Button("Keep Running", role: .cancel) { closeWarning = nil }
+                Button("Cancel and Close Anyway", role: .destructive) {
+                    packages.cancelApply()
+                    askpass.respondCancel()
+                    closeWarning = nil
+                    switch reason {
+                    case .closeWindow:
+                        dismissWindow(id: "brew-package-manager")
+                    case .quitApp:
+                        NSApp.reply(toApplicationShouldTerminate: true)
+                    }
+                }
+            } message: { _ in
+                Text("Stopping mid-pipeline is equivalent to pressing Ctrl-C during a brew sub-call. Packages currently being installed or removed may be left in a partial or broken state, and your Homebrew installation may need manual repair.")
+            }
+            .confirmationDialog(
+                "Run brew autoremove?",
+                isPresented: Binding(
+                    get: { packages.pendingAutoremoveConfirmation },
+                    set: { if !$0 { packages.confirmAutoremove(false) } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button("Yes, autoremove unused dependencies") {
+                    packages.confirmAutoremove(true)
+                }
+                .keyboardShortcut(.defaultAction)
+                Button("No, leave them in place", role: .cancel) {
+                    packages.confirmAutoremove(false)
+                }
+            } message: {
+                Text("The uninstall step succeeded. Some of the formulae it depended on may now be unused. brew autoremove will sweep them up.")
+            }
+            .sheet(item: Binding(
+                get: { askpass.pendingRequest },
+                set: { new in
+                    if new == nil, askpass.pendingRequest != nil {
+                        askpass.respondCancel()
+                    }
+                }
+            )) { _ in
+                passwordModal
+            }
+    }
+}
+
+// MARK: - Sidebar / status filter labels
+
+extension BrewPackageManager.StatusFilter {
+    var label: String {
+        switch self {
+        case .installed:    return "installed"
+        case .notInstalled: return "not installed"
+        case .upgradable:   return "upgradable"
+        case .pinned:       return "pinned"
+        }
+    }
+}
+
 // MARK: - Close interception
 
 /// NSWindowDelegate bridge that routes the window's close gestures
 /// (red button, Cmd+W) through a warning when a gate predicate is
-/// true. The predicate runs at close time, so it's re-evaluated on
-/// every attempt.
+/// true. Re-evaluated on every close attempt.
 private struct CloseInterceptor: NSViewRepresentable {
     var shouldWarn: () -> Bool
     var onAttemptedClose: () -> Void

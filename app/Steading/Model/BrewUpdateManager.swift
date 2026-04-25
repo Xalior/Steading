@@ -19,17 +19,6 @@ final class BrewUpdateManager {
         case idle(count: Int)
         case checking
         case failed(message: String)
-        case applying
-    }
-
-    /// Outcome of the most recent Apply, kept on the manager so the
-    /// window's progress area can display a success/failure/cancel
-    /// indicator briefly after the upgrade finishes.
-    enum ApplyOutcome: Equatable {
-        case success
-        case failed(exitCode: Int32)
-        case cancelled
-        case spawnFailed(reason: String)
     }
 
     /// Dependency boundary for locating the brew binary. Default
@@ -57,16 +46,6 @@ final class BrewUpdateManager {
     /// store-into-actor side effect needs the async-throwing shape;
     /// a synchronous default closure satisfies the async signature).
     typealias TapIndexWriter = @Sendable (URL, Data) async throws -> Void
-
-    /// Enablement decisions for the Brew Package Manager window's
-    /// controls. Pure — derived from state and counts.
-    struct Buttons: Equatable, Sendable {
-        let applyEnabled: Bool
-        let checkNowEnabled: Bool
-        let markAllEnabled: Bool
-        let perRowEnabled: Bool
-        let cancelEnabled: Bool
-    }
 
     enum StartupDecision: Equatable {
         case fireNow
@@ -101,16 +80,6 @@ final class BrewUpdateManager {
     private(set) var state: State = .idle(count: 0)
     private(set) var outdated: [OutdatedPackage] = []
 
-    /// Streaming output from the in-flight Apply, UTF-8 decoded in
-    /// arrival order. Empty before the first Apply and reset at the
-    /// start of each Apply.
-    private(set) var applyLog: String = ""
-
-    /// Outcome of the most recent Apply run. `nil` until the first
-    /// Apply completes; cleared when a fresh Apply begins or when a
-    /// fresh check begins.
-    private(set) var recentApplyOutcome: ApplyOutcome?
-
     private let preferences: PreferencesStore
     private let runner: Runner
     private let sleep: Sleeper
@@ -128,8 +97,6 @@ final class BrewUpdateManager {
 
     private var checkTask: Task<Void, Never>?
     private var scheduledTask: Task<Void, Never>?
-    private var applyTask: Task<Void, Never>?
-    private var applyHandle: StreamingProcessRunner.Handle?
 
     init(preferences: PreferencesStore,
          runner: @escaping Runner = BrewUpdateManager.defaultRunner,
@@ -179,10 +146,6 @@ final class BrewUpdateManager {
         scheduledTask = nil
         checkTask?.cancel()
         checkTask = nil
-        applyHandle?.cancel()
-        applyHandle = nil
-        applyTask?.cancel()
-        applyTask = nil
     }
 
     // MARK: - Check pipeline
@@ -382,82 +345,6 @@ final class BrewUpdateManager {
         return trimmed.isEmpty ? fallback : trimmed
     }
 
-    // MARK: - Apply pipeline
-
-    /// Kick off `brew upgrade <packages…>`, streaming output into
-    /// `applyLog`. Stage-2 askpass path: no password collection up
-    /// front — brew is spawned immediately with `SUDO_ASKPASS`
-    /// pointing at the bundled `steading-askpass` helper. When sudo
-    /// needs a password it invokes the helper, which IPCs back into
-    /// the GUI to surface the password modal on demand.
-    func apply(_ packages: [OutdatedPackage]) {
-        guard applyTask == nil, checkTask == nil else { return }
-        scheduledTask?.cancel()
-        scheduledTask = nil
-        applyLog = ""
-        recentApplyOutcome = nil
-        state = .applying
-
-        applyTask = Task { [weak self] in
-            guard let self else { return }
-            await self.runBrewUpgrade(packages: packages)
-        }
-    }
-
-    private func runBrewUpgrade(packages: [OutdatedPackage]) async {
-        let argv = Self.brewUpgradeArgv(for: packages)
-        guard let brewPath = brewPathResolver() else {
-            finishApply(outcome: .spawnFailed(reason: "no brew on disk"))
-            return
-        }
-
-        var env = ProcessInfo.processInfo.environment
-        if let helper = askpassHelperResolver() {
-            env["SUDO_ASKPASS"] = helper
-        }
-
-        let handle = StreamingProcessRunner.run(
-            executable: brewPath,
-            arguments: argv,
-            environment: env
-        )
-        applyHandle = handle
-
-        var outcome: ApplyOutcome = .cancelled
-        for await event in handle.events {
-            switch event {
-            case .output(_, let data):
-                let piece = String(data: data, encoding: .utf8) ?? ""
-                self.appendLog(piece)
-            case .exited(let code):
-                outcome = (code == 0) ? .success : .failed(exitCode: code)
-            case .cancelled:
-                outcome = .cancelled
-            case .failed(let reason):
-                outcome = .spawnFailed(reason: reason)
-            }
-        }
-        finishApply(outcome: outcome)
-    }
-
-    /// Cancel an in-flight Apply by sending SIGTERM → SIGKILL to brew.
-    /// The apply task still runs to completion so the outcome lands
-    /// in `recentApplyOutcome` and a post-cancel re-check fires.
-    func cancelApply() {
-        applyHandle?.cancel()
-    }
-
-    private func appendLog(_ piece: String) {
-        applyLog += piece
-    }
-
-    private func finishApply(outcome: ApplyOutcome) {
-        applyTask = nil
-        applyHandle = nil
-        recentApplyOutcome = outcome
-        check()
-    }
-
     // MARK: - Pure scheduler / back-off helpers
 
     nonisolated static func shouldFireOnStartup(lastCheckAt: Date?,
@@ -481,14 +368,6 @@ final class BrewUpdateManager {
         default: return nil
         }
     }
-
-    /// Build the argv for a `brew upgrade <name1> <name2> …` call.
-    /// Names are passed through verbatim — `@` and other shell-special
-    /// characters are fine because Process does not go through a shell.
-    nonisolated static func brewUpgradeArgv(for packages: [OutdatedPackage]) -> [String] {
-        ["upgrade"] + packages.map(\.name)
-    }
-
 
     // MARK: - Notification surface (pure)
 
@@ -523,23 +402,6 @@ final class BrewUpdateManager {
                                                      isEnabled: Bool) -> BannerAction {
         if wasEnabled && !isEnabled { return .removeDelivered }
         return .noop
-    }
-
-    /// Map manager state + selection counts to the Brew Package
-    /// Manager window's button enablement. Pure.
-    nonisolated static func buttons(state: State,
-                                    markedCount: Int,
-                                    outdatedCount: Int) -> Buttons {
-        let isChecking = state == .checking
-        let isApplying = state == .applying
-
-        return Buttons(
-            applyEnabled:    !isChecking && !isApplying && markedCount > 0,
-            checkNowEnabled: !isChecking && !isApplying,
-            markAllEnabled:  !isChecking && !isApplying && outdatedCount > 0,
-            perRowEnabled:   !isApplying,
-            cancelEnabled:   isApplying
-        )
     }
 
     // MARK: - Default notifier

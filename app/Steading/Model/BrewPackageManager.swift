@@ -270,7 +270,7 @@ final class BrewPackageManager {
     private var refreshTask: Task<Void, Never>?
 
     init(runner: @escaping Runner = BrewUpdateManager.defaultRunner,
-         subCallRunner: @escaping SubCallRunner = BrewPackageManager.defaultSubCallRunner,
+         subCallRunner: @escaping SubCallRunner = BrewPackageManager.defaultSubCallRunner(),
          jwsCachePathResolver: @escaping JWSCachePathResolver = BrewPackageManager.defaultJWSCachePathResolver,
          tapIndexCachePathResolver: @escaping TapIndexCachePathResolver = BrewUpdateManager.defaultTapIndexCachePathResolver,
          dataReader: @escaping DataReader = BrewPackageManager.defaultDataReader) {
@@ -594,55 +594,58 @@ final class BrewPackageManager {
 
     // MARK: - Default runners
 
-    /// Production sub-call runner: spawns brew via
-    /// `StreamingProcessRunner` with the same brew-path + askpass
-    /// resolution the prior `BrewUpdateManager.apply` used. Streams
-    /// stdout/stderr as they arrive and emits one terminal `.finished`
-    /// event carrying the resolved [ApplyOutcome].
-    nonisolated static let defaultSubCallRunner: SubCallRunner = { argv in
-        let brewPath = BrewDetector.standardSearchPaths.first {
-            FileManager.default.isExecutableFile(atPath: $0)
-        }
-        guard let brewPath else {
-            return failedHandle(reason: "no brew on disk")
-        }
-
-        var env = ProcessInfo.processInfo.environment
-        if let exec = Bundle.main.executableURL {
-            let askpass = exec.deletingLastPathComponent()
-                .appendingPathComponent("steading-askpass").path
-            if FileManager.default.isExecutableFile(atPath: askpass) {
-                env["SUDO_ASKPASS"] = askpass
+    /// Build the production sub-call runner. The resolvers are the
+    /// brew-spawn boundary (kept on `BrewUpdateManager` because regen
+    /// also needs them); the returned closure spawns brew via
+    /// `StreamingProcessRunner` with `SUDO_ASKPASS` set when a
+    /// helper is available, streams stdout/stderr as they arrive,
+    /// and emits one terminal `.finished` event.
+    ///
+    /// Exposed as a factory rather than a `let` so the askpass-env
+    /// integration tests can pass a fake-brew + fake-helper pair
+    /// without rebuilding the streaming wiring from scratch.
+    nonisolated static func defaultSubCallRunner(
+        brewPathResolver: @escaping BrewUpdateManager.BrewPathResolver = BrewUpdateManager.defaultBrewPathResolver,
+        askpassHelperResolver: @escaping BrewUpdateManager.AskpassHelperResolver = BrewUpdateManager.defaultAskpassHelperResolver
+    ) -> SubCallRunner {
+        return { argv in
+            guard let brewPath = brewPathResolver() else {
+                return failedHandle(reason: "no brew on disk")
             }
-        }
-
-        let handle = StreamingProcessRunner.run(
-            executable: brewPath,
-            arguments: argv,
-            environment: env
-        )
-        let stream = AsyncStream<SubCallEvent> { continuation in
-            Task {
-                for await event in handle.events {
-                    switch event {
-                    case .output(_, let data):
-                        let piece = String(data: data, encoding: .utf8) ?? ""
-                        continuation.yield(.output(piece))
-                    case .exited(let code):
-                        let outcome: ApplyOutcome = (code == 0)
-                            ? .success
-                            : .failed(exitCode: code)
-                        continuation.yield(.finished(outcome))
-                    case .cancelled:
-                        continuation.yield(.finished(.cancelled))
-                    case .failed(let reason):
-                        continuation.yield(.finished(.spawnFailed(reason: reason)))
+            var env = ProcessInfo.processInfo.environment
+            if let helper = askpassHelperResolver() {
+                env["SUDO_ASKPASS"] = helper
+            } else {
+                env.removeValue(forKey: "SUDO_ASKPASS")
+            }
+            let handle = StreamingProcessRunner.run(
+                executable: brewPath,
+                arguments: argv,
+                environment: env
+            )
+            let stream = AsyncStream<SubCallEvent> { continuation in
+                Task {
+                    for await event in handle.events {
+                        switch event {
+                        case .output(_, let data):
+                            let piece = String(data: data, encoding: .utf8) ?? ""
+                            continuation.yield(.output(piece))
+                        case .exited(let code):
+                            let outcome: ApplyOutcome = (code == 0)
+                                ? .success
+                                : .failed(exitCode: code)
+                            continuation.yield(.finished(outcome))
+                        case .cancelled:
+                            continuation.yield(.finished(.cancelled))
+                        case .failed(let reason):
+                            continuation.yield(.finished(.spawnFailed(reason: reason)))
+                        }
                     }
+                    continuation.finish()
                 }
-                continuation.finish()
             }
+            return SubCallHandle(events: stream, cancel: handle.cancel)
         }
-        return SubCallHandle(events: stream, cancel: handle.cancel)
     }
 
     /// Build a SubCallHandle that emits one immediate

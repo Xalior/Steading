@@ -6,12 +6,14 @@ struct SteadingApp: App {
     @State private var appState = AppState()
     @State private var preferences: PreferencesStore
     @State private var brewUpdates: BrewUpdateManager
+    @State private var brewPackages: BrewPackageManager
     @State private var askpassService = AskpassService()
 
     init() {
         let prefs = PreferencesStore()
         _preferences = State(initialValue: prefs)
         _brewUpdates = State(initialValue: BrewUpdateManager(preferences: prefs))
+        _brewPackages = State(initialValue: BrewPackageManager())
     }
 
     var body: some Scene {
@@ -34,7 +36,7 @@ struct SteadingApp: App {
             .task {
                 await appState.refreshBrewStatus()
                 appState.refreshHelperStatus()
-                appDelegate.isApplyInFlight = { brewUpdates.state == .applying }
+                appDelegate.isApplyInFlight = { brewPackages.state == .applying }
                 askpassService.start()
                 brewUpdates.start()
             }
@@ -58,10 +60,11 @@ struct SteadingApp: App {
         Window("Brew Package Manager", id: "brew-package-manager") {
             BrewPackageManagerView()
                 .environment(brewUpdates)
+                .environment(brewPackages)
                 .environment(askpassService)
         }
         .windowStyle(.titleBar)
-        .defaultSize(width: 760, height: 560)
+        .defaultSize(width: 1100, height: 640)
 
         Window("Edit /etc/hosts", id: "hosts-editor") {
             HostsEditorView()
