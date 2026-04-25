@@ -21,7 +21,7 @@
 
 **Covers:** Phase 1 → "Tap-regen step on `BrewUpdateManager`" + parser portions of the Tests subsection.
 
-**Status:** not started
+**Status:** in progress
 
 **Changes:**
 - New `BrewIndexParser` — decodes both brew's JWS-envelope cache (`~/Library/Caches/Homebrew/api/{formula,cask}.jws.json`) and the Steading tap-cache shape through one Codable path. JWS envelope's `payload` is a JSON-encoded string that decodes to `{"formulae":[…], "casks":[…]}`.
@@ -76,6 +76,7 @@
 ## Progress Log
 
 - 2026-04-25: Refined into 2 sprints. User elected to collapse the model + view + narrowing + wiring work into one user-visible cut (Sprint 2) so the manual SC walkthrough covers everything in one pass. No PR; autonomous between sprints — only stop on blockers or end-of-Sprint-2 manual walkthrough.
+- 2026-04-25: Sprint 1 opened — exploring existing brew-related code to ground the parser + tap-regen design before writing.
 
 ## Decisions & Notes
 
