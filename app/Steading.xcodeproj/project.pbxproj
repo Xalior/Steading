@@ -21,6 +21,7 @@
 		19244F8724758B76BA554E6E /* SteadingPrivHelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C7A751F5DDA87B5F0E5F2F /* SteadingPrivHelperProtocol.swift */; };
 		1C4F0835A7C272784210CBF2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7707938979911C8523D73059 /* ContentView.swift */; };
 		1ECA67F611AE2F6C1475362F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ABA7DFE5D12701CCFF57393A /* Assets.xcassets */; };
+		229288B0B766312FB8DDA06E /* BrewTapInfoParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A0E6672D72BEAD18364E0C /* BrewTapInfoParser.swift */; };
 		2387DF467AAFBCE2C3B4463D /* HostsFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFC848ED345ADD229D74A5A /* HostsFileWriter.swift */; };
 		25EF154F4067B242900C2FF7 /* SteadingAskpassProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1197D1876ECB03BC47DBBFDF /* SteadingAskpassProtocol.swift */; };
 		2B61FFEDC3761AA6A7483027 /* BrewSudoPreWarmTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85A62D299EE809059CA13083 /* BrewSudoPreWarmTests.swift */; };
@@ -28,6 +29,7 @@
 		3398A120057E163AA6C00C38 /* HostsFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFC848ED345ADD229D74A5A /* HostsFileWriter.swift */; };
 		3F152B117F7523EACC1F2174 /* SteadingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7F24EC4CEA4DD4488FFA7D3 /* SteadingApp.swift */; };
 		43F92A06298B21A5B13408F2 /* BrewUpdateManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFDFCC0EABF501919870CFCF /* BrewUpdateManagerTests.swift */; };
+		48D41E34561E341D89307FAB /* BrewIndexParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6778F5A0DFB85CB50211162 /* BrewIndexParser.swift */; };
 		58E3A110FC38ADBE656A70BC /* SteadingAskpass in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = E6FCB2944E0DB4A2F4E0FE3C /* SteadingAskpass */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		59BBEA3672EEDC23029E3C2B /* SteadingAskpassProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1197D1876ECB03BC47DBBFDF /* SteadingAskpassProtocol.swift */; };
 		5C2F5F90DF0D64C93A1123B0 /* WebappCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1607A01EF1A948C711D87CFC /* WebappCatalog.swift */; };
@@ -53,6 +55,7 @@
 		9D406F49ADA6A79196E73DF8 /* ProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47A7FDF1CF6DD4DD317F06EE /* ProcessRunner.swift */; };
 		A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */; };
 		A8B54CD6DA0FB1EEE66FDA60 /* BottomStatusStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8CFDDE4D1C0F539DB354FD /* BottomStatusStrip.swift */; };
+		ABF71C144FD8FAE9180ED47C /* BrewIndexParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACA65E91C31773D60EC864D /* BrewIndexParserTests.swift */; };
 		AD4CFE124B3E1CD51F66307D /* Steading.icon in Resources */ = {isa = PBXBuildFile; fileRef = 2154574024892E23EF74E084 /* Steading.icon */; };
 		B6922DDBE8E384BB1C266E7C /* PrivHelperAllowlistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */; };
 		B7885D732028C9846E53905A /* HostsFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFC848ED345ADD229D74A5A /* HostsFileWriter.swift */; };
@@ -63,6 +66,7 @@
 		C85869D7D7A50582E5800196 /* BrewNotificationPureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4C650C47A7A64CB6E59D48E /* BrewNotificationPureTests.swift */; };
 		CA898660CB4E27D094823695 /* HostsFileWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A384EE2CBFCF3CD0BF3BF127 /* HostsFileWriterTests.swift */; };
 		CADFD3BED81464CA0D745B1C /* BuiltInServiceRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE01FD58CA5CED026DC5AF1 /* BuiltInServiceRegistry.swift */; };
+		D3395D25685248895A84A727 /* BrewTapInfoParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C10F314216E33AA382BFF09 /* BrewTapInfoParserTests.swift */; };
 		DC7C582B224F36B538A3E5BA /* AskpassService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EED3BBE664446DD30B04F08A /* AskpassService.swift */; };
 		E4B4CD3A96B864FB4FFB0A07 /* MenuBarLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ACB6A59D0706561D9051085 /* MenuBarLabel.swift */; };
 		E77AC5212B5A9B36D0598DB9 /* XPCIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA635A3848267492662B980 /* XPCIntegrationTests.swift */; };
@@ -130,6 +134,7 @@
 
 /* Begin PBXFileReference section */
 		0B1E7B0845CEB8241142969C /* BuiltInServiceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceDetailView.swift; sourceTree = "<group>"; };
+		0C10F314216E33AA382BFF09 /* BrewTapInfoParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewTapInfoParserTests.swift; sourceTree = "<group>"; };
 		10A1713AF56D19F115490A16 /* PrivHelperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperService.swift; sourceTree = "<group>"; };
 		115AAAD61D800D47101E584C /* BrewOutdatedLiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewOutdatedLiveTests.swift; sourceTree = "<group>"; };
 		1197D1876ECB03BC47DBBFDF /* SteadingAskpassProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteadingAskpassProtocol.swift; sourceTree = "<group>"; };
@@ -176,12 +181,14 @@
 		ACB0734C92D7E95118FAF952 /* BrewPackageManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewPackageManagerView.swift; sourceTree = "<group>"; };
 		B0EFEB5D383616F979F1C63F /* PrivHelperAllowlist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperAllowlist.swift; sourceTree = "<group>"; };
 		B3E76ECED5CE0ECEEF61BB2D /* PreferencesStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStoreTests.swift; sourceTree = "<group>"; };
+		B4A0E6672D72BEAD18364E0C /* BrewTapInfoParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewTapInfoParser.swift; sourceTree = "<group>"; };
 		B8794DE1ECD29CC0BF8B94D3 /* BrewStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewStatusBadge.swift; sourceTree = "<group>"; };
 		BAE4B102376FC6E3D88E0B21 /* SteadingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SteadingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BFDFCC0EABF501919870CFCF /* BrewUpdateManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewUpdateManagerTests.swift; sourceTree = "<group>"; };
 		C2355F8756FEB41710F77BF4 /* HostsEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostsEditorView.swift; sourceTree = "<group>"; };
 		C467073801088A7E44BC4B9F /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
 		CE58958345FEE2847E8E57AE /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		D6778F5A0DFB85CB50211162 /* BrewIndexParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewIndexParser.swift; sourceTree = "<group>"; };
 		D7F24EC4CEA4DD4488FFA7D3 /* SteadingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteadingApp.swift; sourceTree = "<group>"; };
 		DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperAllowlistTests.swift; sourceTree = "<group>"; };
 		DEFC848ED345ADD229D74A5A /* HostsFileWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostsFileWriter.swift; sourceTree = "<group>"; };
@@ -192,6 +199,7 @@
 		EED3BBE664446DD30B04F08A /* AskpassService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskpassService.swift; sourceTree = "<group>"; };
 		EFA4E88AC5D08D8FA130E2DE /* OutdatedPackage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutdatedPackage.swift; sourceTree = "<group>"; };
 		F2DB46FC31752B14A6A9B387 /* CatalogDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogDetailView.swift; sourceTree = "<group>"; };
+		FACA65E91C31773D60EC864D /* BrewIndexParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewIndexParserTests.swift; sourceTree = "<group>"; };
 		FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceCatalog.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -201,6 +209,8 @@
 			children = (
 				EED3BBE664446DD30B04F08A /* AskpassService.swift */,
 				96B0EE6A70B228F7CB0D472F /* BrewDetector.swift */,
+				D6778F5A0DFB85CB50211162 /* BrewIndexParser.swift */,
+				B4A0E6672D72BEAD18364E0C /* BrewTapInfoParser.swift */,
 				A11DE03FCAB6FBF055721439 /* BrewUpdateManager.swift */,
 				992A0F7706B92B084A1BDBF7 /* BuiltInCatalog.swift */,
 				AAE01FD58CA5CED026DC5AF1 /* BuiltInServiceRegistry.swift */,
@@ -282,11 +292,13 @@
 				8AAF16B2DF90D69AD1CF6BD3 /* AskpassServiceTests.swift */,
 				86D9EE2616DF441FED03FA77 /* BrewApplyPureTests.swift */,
 				1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */,
+				FACA65E91C31773D60EC864D /* BrewIndexParserTests.swift */,
 				AC1D86D0602EDF9B9D60E8E3 /* BrewNotificationLiveTests.swift */,
 				E4C650C47A7A64CB6E59D48E /* BrewNotificationPureTests.swift */,
 				115AAAD61D800D47101E584C /* BrewOutdatedLiveTests.swift */,
 				1A190D0EF6F2E44373C7A6DA /* BrewOutdatedParserTests.swift */,
 				85A62D299EE809059CA13083 /* BrewSudoPreWarmTests.swift */,
+				0C10F314216E33AA382BFF09 /* BrewTapInfoParserTests.swift */,
 				BFDFCC0EABF501919870CFCF /* BrewUpdateManagerTests.swift */,
 				4A94BF8F2724AB9FE821AC7B /* BrewUpdateScheduleTests.swift */,
 				67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */,
@@ -502,8 +514,10 @@
 				DC7C582B224F36B538A3E5BA /* AskpassService.swift in Sources */,
 				A8B54CD6DA0FB1EEE66FDA60 /* BottomStatusStrip.swift in Sources */,
 				0473162414D5D26E25A7411D /* BrewDetector.swift in Sources */,
+				48D41E34561E341D89307FAB /* BrewIndexParser.swift in Sources */,
 				6134BF39102C0BD834D08EA7 /* BrewPackageManagerView.swift in Sources */,
 				931FE6204696DA4E9DCAD0A1 /* BrewStatusBadge.swift in Sources */,
+				229288B0B766312FB8DDA06E /* BrewTapInfoParser.swift in Sources */,
 				72F8B296A8541A8CDD1ABF2C /* BrewUpdateManager.swift in Sources */,
 				743FCC283A04402A9CDD7AA4 /* BuiltInCatalog.swift in Sources */,
 				8078EC400560936602AA6010 /* BuiltInServiceDetailView.swift in Sources */,
@@ -557,11 +571,13 @@
 				BEBFA2E4D9DD0CD4C47DEA4C /* AskpassServiceTests.swift in Sources */,
 				11BCE8CED4F5A9C92CD19BED /* BrewApplyPureTests.swift in Sources */,
 				A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */,
+				ABF71C144FD8FAE9180ED47C /* BrewIndexParserTests.swift in Sources */,
 				0154D89AA817FC0972A037AF /* BrewNotificationLiveTests.swift in Sources */,
 				C85869D7D7A50582E5800196 /* BrewNotificationPureTests.swift in Sources */,
 				9CF825D29F8FF23D49132D85 /* BrewOutdatedLiveTests.swift in Sources */,
 				FA5246E2F8BD93EEAB26CDF6 /* BrewOutdatedParserTests.swift in Sources */,
 				2B61FFEDC3761AA6A7483027 /* BrewSudoPreWarmTests.swift in Sources */,
+				D3395D25685248895A84A727 /* BrewTapInfoParserTests.swift in Sources */,
 				43F92A06298B21A5B13408F2 /* BrewUpdateManagerTests.swift in Sources */,
 				F38B7255E5E4933AAD9807E1 /* BrewUpdateScheduleTests.swift in Sources */,
 				04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */,
