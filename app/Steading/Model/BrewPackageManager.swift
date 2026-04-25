@@ -236,18 +236,91 @@ final class BrewPackageManager {
     /// closure that emits canned events to drive the state machine.
     typealias SubCallRunner = @Sendable (_ argv: [String]) -> SubCallHandle
 
+    /// Reused from `BrewUpdateManager`: the one-shot subprocess
+    /// surface. Drives pin / unpin / index-loader spawns, which
+    /// don't need streaming output.
+    typealias Runner = BrewUpdateManager.Runner
+
     // MARK: - Lifecycle
 
+    private let runner: Runner
     private let subCallRunner: SubCallRunner
     private var applyTask: Task<Void, Never>?
     private var inflightHandle: SubCallHandle?
     private var autoremoveContinuation: CheckedContinuation<Bool, Never>?
 
-    init(subCallRunner: @escaping SubCallRunner = BrewPackageManager.defaultSubCallRunner) {
+    init(runner: @escaping Runner = BrewUpdateManager.defaultRunner,
+         subCallRunner: @escaping SubCallRunner = BrewPackageManager.defaultSubCallRunner) {
+        self.runner = runner
         self.subCallRunner = subCallRunner
         // The skeleton starts in `.idle` rather than `.loading` until
         // an index loader lands; the loader sub-commit flips this.
         self.state = .idle
+    }
+
+    // MARK: - Pin / unpin
+
+    /// Most recent pin/unpin error, surfaced to the view. `nil`
+    /// either means the last verb succeeded or none has been
+    /// attempted this session.
+    private(set) var lastPinError: String?
+
+    /// Argv for `brew pin <name>`. Pure — exposed for tests.
+    nonisolated static func pinArgv(for token: String) -> [String] {
+        ["pin", token]
+    }
+
+    /// Argv for `brew unpin <name>`. Pure — exposed for tests.
+    nonisolated static func unpinArgv(for token: String) -> [String] {
+        ["unpin", token]
+    }
+
+    /// Pin a formula. No-op if the row is missing or already pinned;
+    /// the row's `isPinned` flips on a zero-exit `brew pin`.
+    func pin(_ token: String) {
+        runPinVerb(argv: Self.pinArgv(for: token), token: token, expectedPinned: true)
+    }
+
+    /// Unpin a formula. Mirrors `pin` for the inverse verb.
+    func unpin(_ token: String) {
+        runPinVerb(argv: Self.unpinArgv(for: token), token: token, expectedPinned: false)
+    }
+
+    private func runPinVerb(argv: [String], token: String, expectedPinned: Bool) {
+        let verbName = argv.first ?? "pin"
+        Task { [weak self, runner] in
+            let result = await runner(argv)
+            await self?.applyPinResult(result, token: token,
+                                       verbName: verbName,
+                                       expectedPinned: expectedPinned)
+        }
+    }
+
+    private func applyPinResult(_ result: BrewUpdateManager.RunResult,
+                                token: String,
+                                verbName: String,
+                                expectedPinned: Bool) {
+        switch result {
+        case .ran(let exit, _, _) where exit == 0:
+            if let i = rows.firstIndex(where: { $0.id == token }) {
+                let r = rows[i]
+                rows[i] = PackageRow(
+                    entry: r.entry,
+                    isInstalled: r.isInstalled,
+                    isOutdated: r.isOutdated,
+                    isPinned: expectedPinned
+                )
+            }
+            lastPinError = nil
+        case .ran(let exit, _, let stderr):
+            let message = String(data: stderr, encoding: .utf8) ?? ""
+            let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+            lastPinError = trimmed.isEmpty
+                ? "brew \(verbName) exited \(exit)"
+                : trimmed
+        case .binaryNotFound(let reason):
+            lastPinError = "brew not available: \(reason)"
+        }
     }
 
     // MARK: - Index population
