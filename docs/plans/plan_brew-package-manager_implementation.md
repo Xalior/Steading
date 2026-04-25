@@ -21,7 +21,7 @@
 
 **Covers:** Phase 1 → "Tap-regen step on `BrewUpdateManager`" + parser portions of the Tests subsection.
 
-**Status:** in progress
+**Status:** complete
 
 **Changes:**
 - New `BrewIndexParser` — decodes both brew's JWS-envelope cache (`~/Library/Caches/Homebrew/api/{formula,cask}.jws.json`) and the Steading tap-cache shape through one Codable path. JWS envelope's `payload` is a JSON-encoded string that decodes to `{"formulae":[…], "casks":[…]}`.
@@ -40,7 +40,7 @@
 
 **Covers:** Phase 1 → "`BrewUpdateManager` narrowing", "New `BrewPackageManager`", "`BrewPackageManagerView` rebuild", "App wiring", and the remaining Tests subsection.
 
-**Status:** not started
+**Status:** in progress
 
 **Changes:**
 - New `app/Steading/Model/BrewPackageManager.swift` — main-actor `@Observable`. Owns: unified package index keyed by full name; `enum SidebarMode { case status, origin, searchResults }`; search text + computed search results; per-row marking state with verb derived from row state at Apply time; tap list + add/remove; Apply pipeline (add phase: `brew upgrade …` then `brew install …`; remove phase: `brew uninstall …`; post-uninstall autoremove confirmation with default-yes; partial-failure halt on first non-zero); pin/unpin verbs (no askpass). Reads `outdated` from `BrewUpdateManager` for upgradable subset and Mark All Upgrades.
@@ -70,15 +70,19 @@
 
 ## Tasks
 
-- [ ] Sprint 1: Brew data parsers + tap-regen on `BrewUpdateManager`
+- [x] Sprint 1: Brew data parsers + tap-regen on `BrewUpdateManager`
 - [ ] Sprint 2: `BrewPackageManager` + view rebuild + narrowing + wiring
 
 ## Progress Log
 
 - 2026-04-25: Refined into 2 sprints. User elected to collapse the model + view + narrowing + wiring work into one user-visible cut (Sprint 2) so the manual SC walkthrough covers everything in one pass. No PR; autonomous between sprints — only stop on blockers or end-of-Sprint-2 manual walkthrough.
 - 2026-04-25: Sprint 1 opened — exploring existing brew-related code to ground the parser + tap-regen design before writing.
+- 2026-04-25: Sprint 1 complete. Landed `BrewIndexParser` + `BrewTapInfoParser` (commit `83d2572`), the post-settle tap-regen step on `BrewUpdateManager` with failure-isolation tests (commit `386dfc9`), and live tests against real brew + a deadlock fix to `defaultRunner` discovered while exercising `tap-info` output (~330 KB exceeded the OS pipe buffer; commit `38f00e8`). Test count went from 137 → 147; all green. Sprint 2 opened — `BrewPackageManager` + view rebuild + narrowing + wiring.
 
 ## Decisions & Notes
+
+- **2026-04-25 (Sprint 1):** `defaultRunner` had a latent pipe-buffer deadlock — sequential `waitUntilExit` then `readToEnd` blocks on any brew subcommand whose stdout exceeds the OS pipe buffer (~64 KB). Surfaced when wiring `brew tap-info --json --installed` into the regen path; tap-info emits ~330 KB on this dev mac. Fixed in commit `38f00e8` by draining both pipes on background tasks concurrent with `waitUntilExit`. Pre-existing brew calls (`update`, `outdated`) emit small enough output to not have triggered it.
+- **2026-04-25 (Sprint 1):** Tap-regen wiring keeps `BrewPathResolver` and `AskpassHelperResolver` on `BrewUpdateManager` since the regen step uses the brew-spawn boundary and the plan-deferred decision gives the implementer freedom to share or split. Sprint 2 will need them to also serve `BrewPackageManager`'s Apply pipeline.
 
 ## Blockers
 
