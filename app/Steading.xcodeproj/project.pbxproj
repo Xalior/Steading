@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0154D89AA817FC0972A037AF /* BrewNotificationLiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1D86D0602EDF9B9D60E8E3 /* BrewNotificationLiveTests.swift */; };
 		035D79267322B25DF18C75B3 /* HostsEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2355F8756FEB41710F77BF4 /* HostsEditorView.swift */; };
+		03DB77AC42BC862BE30DF7E0 /* BrewPackageManagerRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 876291874D491DF81F75AFB0 /* BrewPackageManagerRefreshTests.swift */; };
 		0473162414D5D26E25A7411D /* BrewDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B0EE6A70B228F7CB0D472F /* BrewDetector.swift */; };
 		04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */; };
 		051FB78D75D68C7C13D40855 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE58958345FEE2847E8E57AE /* WelcomeView.swift */; };
@@ -170,6 +171,7 @@
 		85A62D299EE809059CA13083 /* BrewSudoPreWarmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewSudoPreWarmTests.swift; sourceTree = "<group>"; };
 		86D9EE2616DF441FED03FA77 /* BrewApplyPureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewApplyPureTests.swift; sourceTree = "<group>"; };
 		8722163EF36F9FD647CD70CB /* BrewPackageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewPackageManager.swift; sourceTree = "<group>"; };
+		876291874D491DF81F75AFB0 /* BrewPackageManagerRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewPackageManagerRefreshTests.swift; sourceTree = "<group>"; };
 		8AAF16B2DF90D69AD1CF6BD3 /* AskpassServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskpassServiceTests.swift; sourceTree = "<group>"; };
 		8C98F968FED88BA446D39A53 /* StreamingProcessRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingProcessRunnerTests.swift; sourceTree = "<group>"; };
 		8E9A1CB32DC5FC5DBF3CB877 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
@@ -313,6 +315,7 @@
 				115AAAD61D800D47101E584C /* BrewOutdatedLiveTests.swift */,
 				1A190D0EF6F2E44373C7A6DA /* BrewOutdatedParserTests.swift */,
 				9CFB6005BEF1B262E13049D2 /* BrewPackageManagerApplyTests.swift */,
+				876291874D491DF81F75AFB0 /* BrewPackageManagerRefreshTests.swift */,
 				54B8036DEA6EE9477CF19521 /* BrewPackageManagerTests.swift */,
 				8284E9C8D434A8B773FB43AC /* BrewPinTests.swift */,
 				85A62D299EE809059CA13083 /* BrewSudoPreWarmTests.swift */,
@@ -598,6 +601,7 @@
 				9CF825D29F8FF23D49132D85 /* BrewOutdatedLiveTests.swift in Sources */,
 				FA5246E2F8BD93EEAB26CDF6 /* BrewOutdatedParserTests.swift in Sources */,
 				CEB8D84BCEEA47B55311C488 /* BrewPackageManagerApplyTests.swift in Sources */,
+				03DB77AC42BC862BE30DF7E0 /* BrewPackageManagerRefreshTests.swift in Sources */,
 				8D2B8921C4BAC6216D5FCBDF /* BrewPackageManagerTests.swift in Sources */,
 				1CA1987D8F9EC2DAF76ABA2B /* BrewPinTests.swift in Sources */,
 				2B61FFEDC3761AA6A7483027 /* BrewSudoPreWarmTests.swift in Sources */,

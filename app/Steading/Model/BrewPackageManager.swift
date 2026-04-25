@@ -241,20 +241,44 @@ final class BrewPackageManager {
     /// don't need streaming output.
     typealias Runner = BrewUpdateManager.Runner
 
+    /// Resolves the on-disk path for one of brew's JWS cache files
+    /// (`formula.jws.json` / `cask.jws.json`). Returns `nil` when
+    /// the cache is unavailable for that kind — the loader treats
+    /// that as "no entries from this source", not an error.
+    typealias JWSCachePathResolver = @Sendable (BrewIndexEntry.Kind) -> URL?
+
+    /// Resolves the on-disk path for the Steading-owned tap-cache
+    /// file (`~/Library/Caches/com.xalior.Steading/tap-index.json`).
+    /// Reuses `BrewUpdateManager`'s alias so both managers point at
+    /// the same file by default.
+    typealias TapIndexCachePathResolver = BrewUpdateManager.TapIndexCachePathResolver
+
+    /// Synchronous file reader. Production reads the file's bytes
+    /// off disk; tests inject a closure that returns canned data.
+    typealias DataReader = @Sendable (URL) throws -> Data
+
     // MARK: - Lifecycle
 
     private let runner: Runner
     private let subCallRunner: SubCallRunner
+    private let jwsCachePathResolver: JWSCachePathResolver
+    private let tapIndexCachePathResolver: TapIndexCachePathResolver
+    private let dataReader: DataReader
     private var applyTask: Task<Void, Never>?
     private var inflightHandle: SubCallHandle?
     private var autoremoveContinuation: CheckedContinuation<Bool, Never>?
+    private var refreshTask: Task<Void, Never>?
 
     init(runner: @escaping Runner = BrewUpdateManager.defaultRunner,
-         subCallRunner: @escaping SubCallRunner = BrewPackageManager.defaultSubCallRunner) {
+         subCallRunner: @escaping SubCallRunner = BrewPackageManager.defaultSubCallRunner,
+         jwsCachePathResolver: @escaping JWSCachePathResolver = BrewPackageManager.defaultJWSCachePathResolver,
+         tapIndexCachePathResolver: @escaping TapIndexCachePathResolver = BrewUpdateManager.defaultTapIndexCachePathResolver,
+         dataReader: @escaping DataReader = BrewPackageManager.defaultDataReader) {
         self.runner = runner
         self.subCallRunner = subCallRunner
-        // The skeleton starts in `.idle` rather than `.loading` until
-        // an index loader lands; the loader sub-commit flips this.
+        self.jwsCachePathResolver = jwsCachePathResolver
+        self.tapIndexCachePathResolver = tapIndexCachePathResolver
+        self.dataReader = dataReader
         self.state = .idle
     }
 
@@ -321,6 +345,125 @@ final class BrewPackageManager {
         case .binaryNotFound(let reason):
             lastPinError = "brew not available: \(reason)"
         }
+    }
+
+    // MARK: - Index loader / tap add+remove
+
+    /// Refresh the in-memory index. Reads the JWS caches + the
+    /// Steading tap-cache from disk, spawns `brew list` to derive
+    /// installed/pinned sets, spawns `brew tap-info` to populate the
+    /// Origin sidebar, and composes the result into `rows` + `taps`.
+    /// Concurrent refreshes are coalesced — calling twice mid-flight
+    /// is a no-op.
+    ///
+    /// - Parameter outdated: the upgradable subset, supplied by the
+    ///   caller (typically `BrewUpdateManager.outdated`). Threading
+    ///   it through here keeps the ownership contract intact: the
+    ///   headless cycle remains the single source of truth for
+    ///   `brew outdated`.
+    func refresh(outdated: [OutdatedPackage]) {
+        guard refreshTask == nil else { return }
+        let priorState = state
+        state = .loading
+        refreshTask = Task { [weak self] in
+            await self?.runRefresh(outdated: outdated, priorState: priorState)
+        }
+    }
+
+    /// Add a tap. On a zero-exit `brew tap`, refreshes the index so
+    /// the new tap's packages enter the universe.
+    func addTap(_ name: String, outdated: [OutdatedPackage]) {
+        Task { [weak self, runner] in
+            let result = await runner(["tap", name])
+            if case .ran(let exit, _, _) = result, exit == 0 {
+                self?.refresh(outdated: outdated)
+            }
+        }
+    }
+
+    /// Remove a tap. On a zero-exit `brew untap`, refreshes the index
+    /// so removed packages leave the universe.
+    func removeTap(_ name: String, outdated: [OutdatedPackage]) {
+        Task { [weak self, runner] in
+            let result = await runner(["untap", name])
+            if case .ran(let exit, _, _) = result, exit == 0 {
+                self?.refresh(outdated: outdated)
+            }
+        }
+    }
+
+    private func runRefresh(outdated: [OutdatedPackage], priorState: State) async {
+        defer { refreshTask = nil }
+
+        // 1. Disk-resident universe sources.
+        let formulaeFromCache = readJWSEntries(kind: .formula)
+        let casksFromCache = readJWSEntries(kind: .cask)
+        let tapPackages = readTapIndexEntries()
+
+        // 2. Subprocess sources.
+        let installedFormulaeNames = await runListLines(["list", "--formula", "-1"])
+        let installedCaskNames = await runListLines(["list", "--cask", "-1"])
+        let pinnedNames = await runListLines(["list", "--pinned"])
+        let taps = await fetchTapInfo()
+
+        // 3. Compose into rows.
+        let installed = Set(installedFormulaeNames + installedCaskNames)
+        let pinned = Set(pinnedNames)
+        let outdatedTokens = Set(outdated.map(\.name))
+
+        let allEntries = formulaeFromCache + casksFromCache + tapPackages
+        let composedRows = allEntries.map { entry -> PackageRow in
+            let token = entry.token
+            let full = entry.fullToken
+            return PackageRow(
+                entry: entry,
+                isInstalled: installed.contains(token) || installed.contains(full),
+                isOutdated: outdatedTokens.contains(token) || outdatedTokens.contains(full),
+                isPinned: pinned.contains(token) || pinned.contains(full)
+            )
+        }
+
+        rows = composedRows
+        self.taps = taps
+        // Don't clobber an .applying state; only flip back to .idle if
+        // we entered as .loading.
+        if state == .loading {
+            state = .idle
+        } else {
+            // priorState was .applying or similar; restore.
+            state = priorState
+        }
+    }
+
+    private func readJWSEntries(kind: BrewIndexEntry.Kind) -> [BrewIndexEntry] {
+        guard let url = jwsCachePathResolver(kind) else { return [] }
+        guard let data = try? dataReader(url) else { return [] }
+        switch kind {
+        case .formula: return (try? BrewIndexParser.parseJWSFormulae(data)) ?? []
+        case .cask:    return (try? BrewIndexParser.parseJWSCasks(data)) ?? []
+        }
+    }
+
+    private func readTapIndexEntries() -> [BrewIndexEntry] {
+        guard let url = tapIndexCachePathResolver() else { return [] }
+        guard let data = try? dataReader(url) else { return [] }
+        return (try? BrewIndexParser.parseInfoEnvelope(data)) ?? []
+    }
+
+    private func runListLines(_ argv: [String]) async -> [String] {
+        let result = await runner(argv)
+        guard case .ran(let exit, let stdout, _) = result, exit == 0 else { return [] }
+        guard let text = String(data: stdout, encoding: .utf8) else { return [] }
+        return text
+            .split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+    }
+
+    private func fetchTapInfo() async -> [BrewTapInfo] {
+        let result = await runner(["tap-info", "--json", "--installed"])
+        guard case .ran(let exit, let stdout, _) = result, exit == 0 else { return [] }
+        return (try? BrewTapInfoParser.parse(stdout)) ?? []
     }
 
     // MARK: - Index population
@@ -511,6 +654,28 @@ final class BrewPackageManager {
             continuation.finish()
         }
         return SubCallHandle(events: stream, cancel: {})
+    }
+
+    /// Default JWS-cache path resolver: brew's standard
+    /// `~/Library/Caches/Homebrew/api/{formula,cask}.jws.json`.
+    /// Returns `nil` if the file is missing — the loader treats that
+    /// as "no entries", not a hard error.
+    nonisolated static let defaultJWSCachePathResolver: JWSCachePathResolver = { kind in
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let dir = home.appendingPathComponent("Library/Caches/Homebrew/api/", isDirectory: true)
+        let filename: String
+        switch kind {
+        case .formula: filename = "formula.jws.json"
+        case .cask:    filename = "cask.jws.json"
+        }
+        let url = dir.appendingPathComponent(filename)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    /// Default file reader: `Data(contentsOf:)` with no special
+    /// options. Tests inject a closure returning canned bytes.
+    nonisolated static let defaultDataReader: DataReader = { url in
+        try Data(contentsOf: url)
     }
 
     // MARK: - Marking
