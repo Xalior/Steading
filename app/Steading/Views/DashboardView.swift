@@ -43,11 +43,13 @@ struct DashboardView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Re-fire whenever sidebar selection changes — specifically
-        // fires again when the user navigates BACK to the dashboard
-        // (selection -> nil), so any Enable/Disable action that
-        // happened in a detail view is reflected here on return.
+        // fires again when the user navigates BACK to the dashboard,
+        // so any Enable/Disable action that happened in a detail view
+        // is reflected here on return. Both nil and the dashboard
+        // sentinel route to this view via ContentView.
         .task(id: appState.selection) {
-            guard appState.selection == nil else { return }
+            let id = appState.selection
+            guard id == nil || id == CatalogItem.dashboardTag else { return }
             await loadStates()
         }
     }
