@@ -85,16 +85,8 @@ struct BrewPackageManagerView: View {
     @ViewBuilder
     private func sidebar(packages: Bindable<BrewPackageManager>) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Picker("Mode", selection: packages.sidebarMode) {
-                Text("Status").tag(BrewPackageManager.SidebarMode.status)
-                Text("Origin").tag(BrewPackageManager.SidebarMode.origin)
-                Text("Search Results").tag(BrewPackageManager.SidebarMode.searchResults)
-            }
-            .pickerStyle(.segmented)
-            .padding(8)
-
-            Divider()
-
+            // Mode-specific list takes the upper space, leaving the
+            // mode picker as a stable bottom rail — Synaptic-style.
             switch packages.wrappedValue.sidebarMode {
             case .status:
                 statusModeList(packages: packages)
@@ -104,7 +96,19 @@ struct BrewPackageManagerView: View {
                 searchResultsHint(packages: packages.wrappedValue)
             }
 
-            Spacer()
+            Divider()
+
+            Picker("Mode", selection: packages.sidebarMode) {
+                Label("Status", systemImage: "checklist")
+                    .tag(BrewPackageManager.SidebarMode.status)
+                Label("Origin", systemImage: "tray.full")
+                    .tag(BrewPackageManager.SidebarMode.origin)
+                Label("Search", systemImage: "magnifyingglass")
+                    .tag(BrewPackageManager.SidebarMode.searchResults)
+            }
+            .pickerStyle(.segmented)
+            .labelStyle(.iconOnly)
+            .padding(8)
         }
         .background(.thinMaterial)
     }
@@ -113,19 +117,22 @@ struct BrewPackageManagerView: View {
         List(BrewPackageManager.StatusFilter.allCases, id: \.self,
              selection: packages.statusFilter) { filter in
             Text(filter.label)
+                .lineLimit(1)
+                .truncationMode(.tail)
                 .tag(filter)
         }
-        .listStyle(.sidebar)
+        .listStyle(.plain)
     }
 
     private func originModeList(packages: Bindable<BrewPackageManager>) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             List(packages.wrappedValue.taps, id: \.name,
                  selection: packages.originTap) { tap in
-                HStack {
+                HStack(spacing: 4) {
                     Text(tap.name)
+                        .lineLimit(1)
                         .truncationMode(.middle)
-                    Spacer()
+                    Spacer(minLength: 0)
                     if tap.name != "homebrew/core" && tap.name != "homebrew/cask" {
                         Button(role: .destructive) {
                             packages.wrappedValue.removeTap(tap.name,
@@ -138,7 +145,7 @@ struct BrewPackageManagerView: View {
                 }
                 .tag(tap.name)
             }
-            .listStyle(.sidebar)
+            .listStyle(.plain)
 
             Divider()
 
