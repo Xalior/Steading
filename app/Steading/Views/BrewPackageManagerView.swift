@@ -413,19 +413,23 @@ struct BrewPackageManagerView: View {
                 .disabled(!buttons.markAllEnabled)
         }
         ToolbarItem {
-            if isChecking {
-                // Replace the button with a spinner + label so the
-                // user can see the headless cycle is mid-flight.
+            // Always render the same Button shape so the toolbar
+            // doesn't reflow when the headless cycle starts. Label
+            // is pinned to a fixed width and swaps inner content
+            // (spinner + "Checking…" vs. "Check Now").
+            Button {
+                brewUpdates.check()
+            } label: {
                 HStack(spacing: 6) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Checking…")
-                        .foregroundStyle(.secondary)
+                    if isChecking {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                    Text(isChecking ? "Checking…" : "Check Now")
                 }
-            } else {
-                Button("Check Now") { brewUpdates.check() }
-                    .disabled(!buttons.checkNowEnabled)
+                .frame(width: 100, alignment: .center)
             }
+            .disabled(isChecking || !buttons.checkNowEnabled)
         }
         ToolbarItem {
             if buttons.cancelEnabled {
