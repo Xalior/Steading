@@ -267,7 +267,14 @@ final class BrewPackageManager {
     private var applyTask: Task<Void, Never>?
     private var inflightHandle: SubCallHandle?
     private var autoremoveContinuation: CheckedContinuation<Bool, Never>?
-    private var refreshTask: Task<Void, Never>?
+    /// Monotonic counter incremented on every `refresh(outdated:)`
+    /// call. The in-flight loader records its own generation and
+    /// only writes back to `rows` / `taps` if it's still the latest;
+    /// a stale loader (one whose `outdated` has been superseded by
+    /// a newer call) finishes silently. This is the SwiftUI
+    /// `.task(id:)` re-entry contract — the second fire must always
+    /// reflect the new id, never get coalesced into the first.
+    private var refreshGeneration: Int = 0
 
     init(runner: @escaping Runner = BrewUpdateManager.defaultRunner,
          subCallRunner: @escaping SubCallRunner = BrewPackageManager.defaultSubCallRunner(),
@@ -353,8 +360,10 @@ final class BrewPackageManager {
     /// Steading tap-cache from disk, spawns `brew list` to derive
     /// installed/pinned sets, spawns `brew tap-info` to populate the
     /// Origin sidebar, and composes the result into `rows` + `taps`.
-    /// Concurrent refreshes are coalesced — calling twice mid-flight
-    /// is a no-op.
+    /// Each call always runs against its own `outdated` argument —
+    /// when two calls overlap (typical when the headless cycle
+    /// settles after the window opens), the older loader finishes
+    /// silently and the newer one's results land.
     ///
     /// - Parameter outdated: the upgradable subset, supplied by the
     ///   caller (typically `BrewUpdateManager.outdated`). Threading
@@ -362,11 +371,16 @@ final class BrewPackageManager {
     ///   headless cycle remains the single source of truth for
     ///   `brew outdated`.
     func refresh(outdated: [OutdatedPackage]) {
-        guard refreshTask == nil else { return }
+        refreshGeneration += 1
+        let myGeneration = refreshGeneration
         let priorState = state
         state = .loading
-        refreshTask = Task { [weak self] in
-            await self?.runRefresh(outdated: outdated, priorState: priorState)
+        Task { [weak self] in
+            await self?.runRefresh(
+                outdated: outdated,
+                generation: myGeneration,
+                priorState: priorState
+            )
         }
     }
 
@@ -392,9 +406,9 @@ final class BrewPackageManager {
         }
     }
 
-    private func runRefresh(outdated: [OutdatedPackage], priorState: State) async {
-        defer { refreshTask = nil }
-
+    private func runRefresh(outdated: [OutdatedPackage],
+                            generation: Int,
+                            priorState: State) async {
         // 1. Disk-resident universe sources.
         let formulaeFromCache = readJWSEntries(kind: .formula)
         let casksFromCache = readJWSEntries(kind: .cask)
@@ -406,7 +420,11 @@ final class BrewPackageManager {
         let pinnedNames = await runListLines(["list", "--pinned"])
         let taps = await fetchTapInfo()
 
-        // 3. Compose into rows.
+        // 3. A newer refresh has superseded this one — drop on the
+        // floor without writing back.
+        guard generation == refreshGeneration else { return }
+
+        // 4. Compose into rows.
         let installed = Set(installedFormulaeNames + installedCaskNames)
         let pinned = Set(pinnedNames)
         let outdatedTokens = Set(outdated.map(\.name))
@@ -430,7 +448,6 @@ final class BrewPackageManager {
         if state == .loading {
             state = .idle
         } else {
-            // priorState was .applying or similar; restore.
             state = priorState
         }
     }

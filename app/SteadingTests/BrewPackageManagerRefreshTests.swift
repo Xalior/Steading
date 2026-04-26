@@ -162,43 +162,77 @@ struct BrewPackageManagerRefreshTests {
         #expect(manager.state == .idle)
     }
 
-    @Test("refresh: in-flight refresh coalesces — second call is a no-op")
-    func refresh_inFlight_coalesces() async {
+    @Test("refresh: a later call with a different outdated set wins, even when an earlier refresh is still in flight")
+    func refresh_later_call_wins() async throws {
+        // The runner logs every spawn keyed by argv so we can confirm
+        // both refreshes ran and the later one's result is what lands.
         let calls = TestCounter()
-        let runner: BrewUpdateManager.Runner = { _ in
+        let runner: BrewUpdateManager.Runner = { args in
             await calls.increment()
-            try? await Task.sleep(for: .milliseconds(20))
+            // Slow the first call's brew-list step so the second
+            // refresh has a chance to start before the first
+            // finishes.
+            if args == ["list", "--formula", "-1"] {
+                try? await Task.sleep(for: .milliseconds(30))
+                return .ran(exitCode: 0,
+                            stdout: "git\n".data(using: .utf8)!,
+                            stderr: Data())
+            }
             return .ran(exitCode: 0, stdout: Data(), stderr: Data())
+        }
+
+        // A single-entry universe — git from the JWS formula cache.
+        // The first refresh sees outdated = []; the second sees
+        // outdated = [git@…]. Only the second's isOutdated should
+        // land in `rows`.
+        let formulaPayload = #"""
+        [{"name":"git","full_name":"git","tap":"homebrew/core","desc":"VCS"}]
+        """#
+        let jwsURL = URL(fileURLWithPath: "/tmp/test-jws-\(UUID().uuidString).json")
+        let reader: BrewPackageManager.DataReader = { _ in
+            jwsEnvelopeData(payload: formulaPayload)
         }
         let manager = BrewPackageManager(
             runner: runner,
-            jwsCachePathResolver: { _ in nil },
+            jwsCachePathResolver: { kind in kind == .formula ? jwsURL : nil },
             tapIndexCachePathResolver: { nil },
-            dataReader: { _ in throw CocoaError(.fileNoSuchFile) }
+            dataReader: reader
         )
 
-        manager.refresh(outdated: [])
-        manager.refresh(outdated: [])
-        manager.refresh(outdated: [])
-        await waitFor { manager.state == .idle }
+        let outdated = [
+            OutdatedPackage(name: "git", installedVersion: "2.53",
+                            availableVersion: "2.54", kind: .formula),
+        ]
 
-        // The first refresh spawns four runner calls: brew list --formula,
-        // brew list --cask, brew list --pinned, brew tap-info. Subsequent
-        // refresh() calls during the first one's flight must not spawn a
-        // second pipeline.
+        manager.refresh(outdated: [])           // generation 1
+        manager.refresh(outdated: outdated)     // generation 2 — wins
+        await waitFor { manager.state == .idle && !manager.rows.isEmpty }
+
+        let git = try #require(manager.rows.first { $0.entry.token == "git" })
+        #expect(git.isOutdated,
+                "the later refresh's outdated set must be reflected even though it was issued while the first refresh was still in flight")
+
+        // Both refreshes spawned brew-list calls — the older one
+        // doesn't get coalesced away.
         let total = await calls.value
-        #expect(total == 4)
+        #expect(total == 8)
     }
 
     // MARK: - Helpers
 
     nonisolated private func jwsEnvelope(payload: String) -> Data {
-        let escaped = String(
-            data: try! JSONEncoder().encode(payload),
-            encoding: .utf8
-        )!
-        return #"{"payload":\#(escaped),"signatures":[]}"#.data(using: .utf8)!
+        jwsEnvelopeData(payload: payload)
     }
+}
+
+/// File-private helper used by both the test struct's instance methods
+/// and the `Sendable` reader closure in `refresh_later_call_wins`.
+private func jwsEnvelopeData(payload: String) -> Data {
+    let escaped = String(
+        data: try! JSONEncoder().encode(payload),
+        encoding: .utf8
+    )!
+    return #"{"payload":\#(escaped),"signatures":[]}"#.data(using: .utf8)!
 }
 
 private actor TestCounter {
