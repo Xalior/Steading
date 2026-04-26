@@ -86,7 +86,8 @@ struct BrewPackageManagerView: View {
     private func sidebar(packages: Bindable<BrewPackageManager>) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             // Mode-specific list takes the upper space, leaving the
-            // mode picker as a stable bottom rail — Synaptic-style.
+            // three stacked mode buttons as a Synaptic-style bottom
+            // rail.
             switch packages.wrappedValue.sidebarMode {
             case .status:
                 statusModeList(packages: packages)
@@ -98,19 +99,56 @@ struct BrewPackageManagerView: View {
 
             Divider()
 
-            Picker("Mode", selection: packages.sidebarMode) {
-                Label("Status", systemImage: "checklist")
-                    .tag(BrewPackageManager.SidebarMode.status)
-                Label("Origin", systemImage: "tray.full")
-                    .tag(BrewPackageManager.SidebarMode.origin)
-                Label("Search", systemImage: "magnifyingglass")
-                    .tag(BrewPackageManager.SidebarMode.searchResults)
+            VStack(spacing: 4) {
+                modeButton(
+                    .status, label: "Status", icon: "checklist",
+                    selection: packages.sidebarMode
+                )
+                modeButton(
+                    .origin, label: "Origin", icon: "tray.full",
+                    selection: packages.sidebarMode
+                )
+                modeButton(
+                    .searchResults, label: "Search Results", icon: "magnifyingglass",
+                    selection: packages.sidebarMode
+                )
             }
-            .pickerStyle(.segmented)
-            .labelStyle(.iconOnly)
             .padding(8)
         }
         .background(.thinMaterial)
+    }
+
+    /// One full-width mode-selector button. Shows icon + label, with
+    /// a tinted background when the button's mode is the current
+    /// selection. Plain button style + a manual selected highlight
+    /// is more compact and label-friendly than `.segmented` at
+    /// narrow widths.
+    private func modeButton(_ mode: BrewPackageManager.SidebarMode,
+                            label: String,
+                            icon: String,
+                            selection: Binding<BrewPackageManager.SidebarMode>) -> some View {
+        let isSelected = selection.wrappedValue == mode
+        return Button {
+            selection.wrappedValue = mode
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .frame(width: 16)
+                Text(label)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isSelected ? Color.accentColor.opacity(0.25) : Color.clear)
+            )
+            .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
+        }
+        .buttonStyle(.plain)
     }
 
     private func statusModeList(packages: Bindable<BrewPackageManager>) -> some View {
