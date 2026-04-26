@@ -71,23 +71,32 @@ struct BrewPackageManagerView: View {
 
     @ViewBuilder
     private func coreLayout(packages: Bindable<BrewPackageManager>) -> some View {
-        HSplitView {
+        HStack(spacing: 0) {
+            // Fixed-width sidebar — the contents (mode buttons + the
+            // mode-specific list) are short text rows that don't
+            // benefit from being wider, and a draggable splitter on
+            // a sidebar this narrow tended to be misadjusted into
+            // either obscuring the buttons or eating into the table.
             sidebar(packages: packages)
-                .frame(minWidth: 200, idealWidth: 220)
+                .frame(width: 180)
 
-            VSplitView {
-                packageListPane(packages: packages.wrappedValue)
-                    .frame(minHeight: 220)
+            Divider()
 
-                if shouldShowProgressArea {
-                    progressArea
-                        .frame(minHeight: 120)
+            HSplitView {
+                VSplitView {
+                    packageListPane(packages: packages.wrappedValue)
+                        .frame(minHeight: 220)
+
+                    if shouldShowProgressArea {
+                        progressArea
+                            .frame(minHeight: 120)
+                    }
                 }
-            }
-            .frame(minWidth: 380)
+                .frame(minWidth: 380)
 
-            detailsPane(packages: packages.wrappedValue)
-                .frame(minWidth: 220, idealWidth: 260)
+                detailsPane(packages: packages.wrappedValue)
+                    .frame(minWidth: 220, idealWidth: 260)
+            }
         }
         .frame(minWidth: 900, idealWidth: 1100, minHeight: 540, idealHeight: 640)
     }
