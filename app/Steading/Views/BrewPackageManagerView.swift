@@ -82,21 +82,28 @@ struct BrewPackageManagerView: View {
 
             Divider()
 
-            HSplitView {
-                VSplitView {
-                    packageListPane(packages: packages.wrappedValue)
-                        .frame(minHeight: 220)
+            // Centre column: the package table on top with the
+            // streaming-output progress area below it. Vertical
+            // split stays resizable so the user can grow the log
+            // area when an Apply is in flight.
+            VSplitView {
+                packageListPane(packages: packages.wrappedValue)
+                    .frame(minHeight: 220)
 
-                    if shouldShowProgressArea {
-                        progressArea
-                            .frame(minHeight: 120)
-                    }
+                if shouldShowProgressArea {
+                    progressArea
+                        .frame(minHeight: 120)
                 }
-                .frame(minWidth: 380)
-
-                detailsPane(packages: packages.wrappedValue)
-                    .frame(minWidth: 220, idealWidth: 260)
             }
+            .frame(minWidth: 380)
+
+            Divider()
+
+            // Fixed-width details pane — same rationale as the
+            // sidebar: contents are bounded text-metadata rows so a
+            // resizable split just lets it grow past what's useful.
+            detailsPane(packages: packages.wrappedValue)
+                .frame(width: 220)
         }
         .frame(minWidth: 900, idealWidth: 1100, minHeight: 540, idealHeight: 640)
     }
