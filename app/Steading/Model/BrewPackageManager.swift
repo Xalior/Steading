@@ -416,10 +416,14 @@ final class BrewPackageManager {
     private func runRefresh(outdated: [OutdatedPackage],
                             generation: Int,
                             priorState: State) async {
-        // 1. Disk-resident universe sources.
-        let formulaeFromCache = readJWSEntries(kind: .formula)
-        let casksFromCache = readJWSEntries(kind: .cask)
-        let tapPackages = readTapIndexEntries()
+        // 1. Disk-resident universe sources. The JWS files are
+        // ~30 MB / ~15 MB on a typical dev mac and the JSON parse is
+        // multi-second; running it on the main actor blanks the UI
+        // (even a loading spinner can't animate). Detach the read +
+        // parse so the @MainActor stays responsive while we wait.
+        let formulaeFromCache = await readJWSEntriesAsync(kind: .formula)
+        let casksFromCache = await readJWSEntriesAsync(kind: .cask)
+        let tapPackages = await readTapIndexEntriesAsync()
 
         // 2. Subprocess sources.
         let installedFormulaeNames = await runListLines(["list", "--formula", "-1"])
@@ -459,19 +463,27 @@ final class BrewPackageManager {
         }
     }
 
-    private func readJWSEntries(kind: BrewIndexEntry.Kind) -> [BrewIndexEntry] {
-        guard let url = jwsCachePathResolver(kind) else { return [] }
-        guard let data = try? dataReader(url) else { return [] }
-        switch kind {
-        case .formula: return (try? BrewIndexParser.parseJWSFormulae(data)) ?? []
-        case .cask:    return (try? BrewIndexParser.parseJWSCasks(data)) ?? []
-        }
+    private func readJWSEntriesAsync(kind: BrewIndexEntry.Kind) async -> [BrewIndexEntry] {
+        let resolver = jwsCachePathResolver
+        let reader = dataReader
+        return await Task.detached(priority: .userInitiated) {
+            guard let url = resolver(kind) else { return [] }
+            guard let data = try? reader(url) else { return [] }
+            switch kind {
+            case .formula: return (try? BrewIndexParser.parseJWSFormulae(data)) ?? []
+            case .cask:    return (try? BrewIndexParser.parseJWSCasks(data)) ?? []
+            }
+        }.value
     }
 
-    private func readTapIndexEntries() -> [BrewIndexEntry] {
-        guard let url = tapIndexCachePathResolver() else { return [] }
-        guard let data = try? dataReader(url) else { return [] }
-        return (try? BrewIndexParser.parseInfoEnvelope(data)) ?? []
+    private func readTapIndexEntriesAsync() async -> [BrewIndexEntry] {
+        let resolver = tapIndexCachePathResolver
+        let reader = dataReader
+        return await Task.detached(priority: .userInitiated) {
+            guard let url = resolver() else { return [] }
+            guard let data = try? reader(url) else { return [] }
+            return (try? BrewIndexParser.parseInfoEnvelope(data)) ?? []
+        }.value
     }
 
     private func runListLines(_ argv: [String]) async -> [String] {

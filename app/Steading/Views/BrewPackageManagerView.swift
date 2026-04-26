@@ -243,6 +243,25 @@ struct BrewPackageManagerView: View {
     @ViewBuilder
     private func packageListPane(packages: BrewPackageManager) -> some View {
         let displayed = packages.filteredRows.sorted(using: sortOrder)
+        packageTable(displayed: displayed, packages: packages)
+            .overlay {
+                if packages.state == .loading {
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .scaleEffect(1.4)
+                        Text("Loading package index…")
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(24)
+                    .background(.regularMaterial,
+                                in: RoundedRectangle(cornerRadius: 12))
+                }
+            }
+    }
+
+    @ViewBuilder
+    private func packageTable(displayed: [BrewPackageManager.PackageRow],
+                              packages: BrewPackageManager) -> some View {
         Table(displayed, selection: $selectedRowID, sortOrder: $sortOrder) {
             TableColumn("✓") { row in
                 Toggle(isOn: Binding(
@@ -297,7 +316,7 @@ struct BrewPackageManagerView: View {
                 }
             }
         }
-    }
+    } // packageTable
 
     private func rowStatusText(_ row: BrewPackageManager.PackageRow) -> String {
         if !row.isInstalled { return "not installed" }
