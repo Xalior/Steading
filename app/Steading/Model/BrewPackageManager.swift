@@ -154,7 +154,14 @@ final class BrewPackageManager {
     /// fully-qualified token is also matched so a user typing a tap
     /// prefix surfaces tap-namespaced packages.
     nonisolated static func matches(_ row: PackageRow, search needle: String) -> Bool {
-        let lowered = needle.lowercased()
+        matches(row, searchLowered: needle.lowercased())
+    }
+
+    /// Same predicate, but with a pre-lowercased needle — used by the
+    /// filtered-rows pipeline so the needle isn't re-lowercased once
+    /// per row at filter time (k+ rows × per-row .lowercased()
+    /// dominates type-ahead latency without this).
+    nonisolated static func matches(_ row: PackageRow, searchLowered lowered: String) -> Bool {
         if lowered.isEmpty { return false }
         if row.entry.token.lowercased().contains(lowered) { return true }
         if row.entry.fullToken.lowercased().contains(lowered) { return true }
@@ -727,7 +734,8 @@ final class BrewPackageManager {
             guard let tap = originTap else { return [] }
             return rows.filter { Self.matches($0, originTap: tap) }
         case .searchResults:
-            return rows.filter { Self.matches($0, search: searchText) }
+            let lowered = searchText.lowercased()
+            return rows.filter { Self.matches($0, searchLowered: lowered) }
         }
     }
 

@@ -24,6 +24,12 @@ struct BrewPackageManagerView: View {
     @State private var sortOrder: [KeyPathComparator<BrewPackageManager.PackageRow>] = [
         KeyPathComparator(\.entry.token)
     ]
+    /// Local typed-search text. Writes to `packages.searchText`
+    /// happen on a debounced trailing edge so the per-keystroke
+    /// re-filter (5k+ rows × substring match) doesn't stutter
+    /// typing.
+    @State private var typedSearch: String = ""
+    @State private var searchDebounce: Task<Void, Never>?
 
     enum CloseReason: Identifiable {
         case closeWindow
@@ -36,10 +42,16 @@ struct BrewPackageManagerView: View {
 
         coreLayout(packages: Bindable(packages))
             .toolbar { toolbarContents(packages: packages) }
-            .searchable(text: $packages.searchText, prompt: "Search packages")
-            .onChange(of: packages.searchText) { _, newValue in
-                if !newValue.isEmpty {
-                    packages.sidebarMode = .searchResults
+            .searchable(text: $typedSearch, prompt: "Search packages")
+            .onChange(of: typedSearch) { _, newValue in
+                searchDebounce?.cancel()
+                searchDebounce = Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(200))
+                    guard !Task.isCancelled else { return }
+                    packages.searchText = newValue
+                    if !newValue.isEmpty {
+                        packages.sidebarMode = .searchResults
+                    }
                 }
             }
             .task(id: brewUpdates.outdated) {
