@@ -65,6 +65,10 @@ struct SteadingApp: App {
         }
         .windowStyle(.titleBar)
         .defaultSize(width: 1100, height: 640)
+        // The Tools menu already exposes this window; suppress the
+        // automatic Window-menu entry SwiftUI would otherwise add
+        // for the scene so the menu bar isn't duplicated.
+        .commandsRemoved()
 
         Window("Edit /etc/hosts", id: "hosts-editor") {
             HostsEditorView()
@@ -72,6 +76,7 @@ struct SteadingApp: App {
         }
         .windowStyle(.titleBar)
         .defaultSize(width: 720, height: 520)
+        .commandsRemoved()
 
         MenuBarExtra {
             MenuBarContent()
