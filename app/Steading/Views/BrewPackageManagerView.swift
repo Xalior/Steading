@@ -406,14 +406,26 @@ struct BrewPackageManagerView: View {
     @ToolbarContentBuilder
     private func toolbarContents(packages: BrewPackageManager) -> some ToolbarContent {
         let buttons = buttonsState(packages: packages)
+        let isChecking = brewUpdates.state == .checking
 
         ToolbarItem {
             Button("Mark All Upgrades") { packages.markAllUpgrades() }
                 .disabled(!buttons.markAllEnabled)
         }
         ToolbarItem {
-            Button("Check Now") { brewUpdates.check() }
-                .disabled(!buttons.checkNowEnabled)
+            if isChecking {
+                // Replace the button with a spinner + label so the
+                // user can see the headless cycle is mid-flight.
+                HStack(spacing: 6) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Checking…")
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Button("Check Now") { brewUpdates.check() }
+                    .disabled(!buttons.checkNowEnabled)
+            }
         }
         ToolbarItem {
             if buttons.cancelEnabled {
@@ -424,7 +436,7 @@ struct BrewPackageManagerView: View {
             } else {
                 Button("Apply") { packages.apply() }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(!buttons.applyEnabled)
+                    .disabled(!buttons.applyEnabled || isChecking)
             }
         }
     }
