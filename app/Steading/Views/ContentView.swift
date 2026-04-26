@@ -5,6 +5,8 @@ struct ContentView: View {
 
     var body: some View {
         @Bindable var state = appState
+        let isDetail = state.selection != nil
+            && state.selection != CatalogItem.dashboardTag
 
         NavigationSplitView {
             SidebarView(selection: $state.selection)
@@ -12,6 +14,18 @@ struct ContentView: View {
         } detail: {
             detailView(for: state.selection)
                 .id(state.selection ?? CatalogItem.dashboardTag)
+                .toolbar {
+                    if isDetail {
+                        ToolbarItem(placement: .navigation) {
+                            Button {
+                                state.selection = CatalogItem.dashboardTag
+                            } label: {
+                                Label("Dashboard", systemImage: "chevron.left")
+                            }
+                            .help("Return to Dashboard")
+                        }
+                    }
+                }
         }
         .navigationTitle("Steading")
         .safeAreaInset(edge: .bottom, spacing: 0) {
