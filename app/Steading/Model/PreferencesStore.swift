@@ -40,38 +40,84 @@ final class PreferencesStore {
         ])
     }
 
+    // The properties below are computed against `defaults`, so the
+    // `@Observable` macro can't auto-track them. Manual
+    // `access(keyPath:)` / `withMutation(keyPath:)` calls are what
+    // tell SwiftUI to re-evaluate any view bound to them — without
+    // these the controls in PreferencesView appear read-only.
+
     var checkIntervalHours: Int {
-        get { defaults.integer(forKey: Key.checkIntervalHours) }
-        set { defaults.set(Self.clampIntervalHours(newValue), forKey: Key.checkIntervalHours) }
+        get {
+            access(keyPath: \.checkIntervalHours)
+            return defaults.integer(forKey: Key.checkIntervalHours)
+        }
+        set {
+            withMutation(keyPath: \.checkIntervalHours) {
+                defaults.set(Self.clampIntervalHours(newValue), forKey: Key.checkIntervalHours)
+            }
+        }
     }
 
     var checkOnLaunch: Bool {
-        get { defaults.bool(forKey: Key.checkOnLaunch) }
-        set { defaults.set(newValue, forKey: Key.checkOnLaunch) }
+        get {
+            access(keyPath: \.checkOnLaunch)
+            return defaults.bool(forKey: Key.checkOnLaunch)
+        }
+        set {
+            withMutation(keyPath: \.checkOnLaunch) {
+                defaults.set(newValue, forKey: Key.checkOnLaunch)
+            }
+        }
     }
 
     var notifyDockBadge: Bool {
-        get { defaults.bool(forKey: Key.notifyDockBadge) }
-        set { defaults.set(newValue, forKey: Key.notifyDockBadge) }
+        get {
+            access(keyPath: \.notifyDockBadge)
+            return defaults.bool(forKey: Key.notifyDockBadge)
+        }
+        set {
+            withMutation(keyPath: \.notifyDockBadge) {
+                defaults.set(newValue, forKey: Key.notifyDockBadge)
+            }
+        }
     }
 
     var notifyMenuBarLabel: Bool {
-        get { defaults.bool(forKey: Key.notifyMenuBarLabel) }
-        set { defaults.set(newValue, forKey: Key.notifyMenuBarLabel) }
+        get {
+            access(keyPath: \.notifyMenuBarLabel)
+            return defaults.bool(forKey: Key.notifyMenuBarLabel)
+        }
+        set {
+            withMutation(keyPath: \.notifyMenuBarLabel) {
+                defaults.set(newValue, forKey: Key.notifyMenuBarLabel)
+            }
+        }
     }
 
     var notifySystemBanner: Bool {
-        get { defaults.bool(forKey: Key.notifySystemBanner) }
-        set { defaults.set(newValue, forKey: Key.notifySystemBanner) }
+        get {
+            access(keyPath: \.notifySystemBanner)
+            return defaults.bool(forKey: Key.notifySystemBanner)
+        }
+        set {
+            withMutation(keyPath: \.notifySystemBanner) {
+                defaults.set(newValue, forKey: Key.notifySystemBanner)
+            }
+        }
     }
 
     var lastCheckAt: Date? {
-        get { defaults.object(forKey: Key.lastCheckAt) as? Date }
+        get {
+            access(keyPath: \.lastCheckAt)
+            return defaults.object(forKey: Key.lastCheckAt) as? Date
+        }
         set {
-            if let newValue {
-                defaults.set(newValue, forKey: Key.lastCheckAt)
-            } else {
-                defaults.removeObject(forKey: Key.lastCheckAt)
+            withMutation(keyPath: \.lastCheckAt) {
+                if let newValue {
+                    defaults.set(newValue, forKey: Key.lastCheckAt)
+                } else {
+                    defaults.removeObject(forKey: Key.lastCheckAt)
+                }
             }
         }
     }
