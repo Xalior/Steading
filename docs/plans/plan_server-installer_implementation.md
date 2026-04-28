@@ -22,10 +22,13 @@
 - **2026-04-28** — Phase 1 opened. Working order: foundation (Yams + schema types + loader + hash script + verifier + refusal list) → helper extensions (XPC methods + approvals plist) → consent gate UI → picker + installed-services store → wizard renderer → install/uninstall pipeline → MySQL reference (tap + wrapper + mysql.yml) → status pane → view logs → edit config → failure recovery → catalog completion (5 remaining services + wrappers).
 - **2026-04-28** — Yams 5.4.0 added via SPM. xcodegen regenerated; Steading target builds clean with the new dependency. Yams is wired only into the Steading app target — the helper does not parse YAML, so it stays Yams-free.
 - **2026-04-28** — Schema types + ServiceDefinitionLoader landed with pure tests. 194/194 tests pass. Loader exercises strictness rejection (anchors/aliases/explicit tags), Yams Codable decode, and schema-invariant validation. Tests use inline YAML fixtures hitting the real loader.
+- **2026-04-28** — DefinitionHash + BundleHashList + BundleDefinitionVerifier + ExternalDefinitionScanner landed. 201/201 tests pass.
+- **2026-04-28** — SteadingDefinitionValidator CLI target landed (signed, hardened-runtime), wired as Steading's pre-build phase to write .bundle-hashes.plist into the bundle. Live tests spawn the real binary; build-fail fixture confirmed via 'validate: malformed YAML exits non-zero'. CLI also embedded in Steading.app/Contents/Executables/ for third-party authors. 205/205 tests pass.
 
 ## Decisions & Notes
 
 - **Yams strictness pre-pass:** Yams 5.4.0 holds `Node.anchor` as a weak reference, so anchors are gone from a composed Node tree by the time the loader walks it. Strictness check now does a source-byte scan (with quoted-string/comment stripping) before handing off to Yams' Codable decoder. Works for our schema; expected to false-positive on legitimate `&`/`*`/`!` in unquoted scalars (which would be unusual and easily fixed by quoting). Documented in code.
+- **Build-phase validator:** plan called for a "shell script" but a shell script can't import Yams or call ServiceDefinitionLoader, so we'd violate the plan's "same loader" requirement. Resolved upfront with the user: SteadingDefinitionValidator becomes a signed CLI target that links the same Swift sources the runtime uses. Doubles as a deliverable for third-party YAML authors per the user's direction.
 
 ## Blockers
 
