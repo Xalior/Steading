@@ -15,9 +15,11 @@
 
 ## Phase Status
 
-- **Phase 1: Server Installer** — not started.
+- **Phase 1: Server Installer** — in progress.
 
 ## Progress Log
+
+- **2026-04-28** — Phase 1 opened. Working order: foundation (Yams + schema types + loader + hash script + verifier + refusal list) → helper extensions (XPC methods + approvals plist) → consent gate UI → picker + installed-services store → wizard renderer → install/uninstall pipeline → MySQL reference (tap + wrapper + mysql.yml) → status pane → view logs → edit config → failure recovery → catalog completion (5 remaining services + wrappers).
 
 ## Decisions & Notes
 
