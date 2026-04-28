@@ -38,6 +38,7 @@
 		59BBEA3672EEDC23029E3C2B /* SteadingAskpassProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1197D1876ECB03BC47DBBFDF /* SteadingAskpassProtocol.swift */; };
 		5C2F5F90DF0D64C93A1123B0 /* WebappCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1607A01EF1A948C711D87CFC /* WebappCatalog.swift */; };
 		5D8F1B92C479185B2A9E0180 /* BuiltInServiceRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 518AD0434FFD8D998CAC5FB6 /* BuiltInServiceRunner.swift */; };
+		5E4709EA2206D802F6A3620B /* BundleDefinitionVerifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C511B7EB4A31C45750F740 /* BundleDefinitionVerifierTests.swift */; };
 		6134BF39102C0BD834D08EA7 /* BrewPackageManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACB0734C92D7E95118FAF952 /* BrewPackageManagerView.swift */; };
 		67B1E19100A67C3C075A6CA2 /* ServiceDefinitionLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FAED18E92A4829A068A4A6 /* ServiceDefinitionLoaderTests.swift */; };
 		68997DD6551727AE72A46EFE /* OutdatedPackage.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFA4E88AC5D08D8FA130E2DE /* OutdatedPackage.swift */; };
@@ -63,6 +64,7 @@
 		9CF825D29F8FF23D49132D85 /* BrewOutdatedLiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 115AAAD61D800D47101E584C /* BrewOutdatedLiveTests.swift */; };
 		9D406F49ADA6A79196E73DF8 /* ProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47A7FDF1CF6DD4DD317F06EE /* ProcessRunner.swift */; };
 		A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */; };
+		A89104DD2683B991748CDAA2 /* BundleDefinitionVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF876A44CFB3DA64DE7C554 /* BundleDefinitionVerifier.swift */; };
 		A8B54CD6DA0FB1EEE66FDA60 /* BottomStatusStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8CFDDE4D1C0F539DB354FD /* BottomStatusStrip.swift */; };
 		ABF71C144FD8FAE9180ED47C /* BrewIndexParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACA65E91C31773D60EC864D /* BrewIndexParserTests.swift */; };
 		AD4CFE124B3E1CD51F66307D /* Steading.icon in Resources */ = {isa = PBXBuildFile; fileRef = 2154574024892E23EF74E084 /* Steading.icon */; };
@@ -83,8 +85,10 @@
 		E4B4CD3A96B864FB4FFB0A07 /* MenuBarLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ACB6A59D0706561D9051085 /* MenuBarLabel.swift */; };
 		E77AC5212B5A9B36D0598DB9 /* XPCIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA635A3848267492662B980 /* XPCIntegrationTests.swift */; };
 		E7AAF54B7B276501030AC2EC /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A92531C471AFC497B95E816 /* OnboardingView.swift */; };
+		E7E98BF28F0D2B310BCEC668 /* ExternalDefinitionScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B944923330F45FCBA49BAF /* ExternalDefinitionScanner.swift */; };
 		E89CE1926409C2113DE7F06C /* ServiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */; };
 		EB2C97840B93FBF7A5F4A358 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 455044AAFD76888EB755F58A /* SidebarView.swift */; };
+		ED3F20926BAF905A95F2A330 /* DefinitionHash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 488C8E28EF31F98C105DEBE3 /* DefinitionHash.swift */; };
 		ED95596C683C948EEC206B68 /* SteadingPrivHelper in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = E0ADD5FDB11E296C53AA5C23 /* SteadingPrivHelper */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		EF7CB3D4B2A650A7DD19CADC /* PrivHelperAllowlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EFEB5D383616F979F1C63F /* PrivHelperAllowlist.swift */; };
 		F1F6D12782FC97DA4C8A45CD /* PrivHelperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A1713AF56D19F115490A16 /* PrivHelperService.swift */; };
@@ -148,6 +152,7 @@
 		0477BF18E09271875427100F /* WriteTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WriteTarget.swift; sourceTree = "<group>"; };
 		0B1E7B0845CEB8241142969C /* BuiltInServiceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceDetailView.swift; sourceTree = "<group>"; };
 		0C10F314216E33AA382BFF09 /* BrewTapInfoParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewTapInfoParserTests.swift; sourceTree = "<group>"; };
+		0CF876A44CFB3DA64DE7C554 /* BundleDefinitionVerifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleDefinitionVerifier.swift; sourceTree = "<group>"; };
 		10A1713AF56D19F115490A16 /* PrivHelperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperService.swift; sourceTree = "<group>"; };
 		115AAAD61D800D47101E584C /* BrewOutdatedLiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewOutdatedLiveTests.swift; sourceTree = "<group>"; };
 		1197D1876ECB03BC47DBBFDF /* SteadingAskpassProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteadingAskpassProtocol.swift; sourceTree = "<group>"; };
@@ -164,6 +169,7 @@
 		3F631AFF0C04F2D5533E126C /* CatalogItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogItem.swift; sourceTree = "<group>"; };
 		455044AAFD76888EB755F58A /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		47A7FDF1CF6DD4DD317F06EE /* ProcessRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRunner.swift; sourceTree = "<group>"; };
+		488C8E28EF31F98C105DEBE3 /* DefinitionHash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefinitionHash.swift; sourceTree = "<group>"; };
 		4A94BF8F2724AB9FE821AC7B /* BrewUpdateScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewUpdateScheduleTests.swift; sourceTree = "<group>"; };
 		518AD0434FFD8D998CAC5FB6 /* BuiltInServiceRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRunner.swift; sourceTree = "<group>"; };
 		54B8036DEA6EE9477CF19521 /* BrewPackageManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewPackageManagerTests.swift; sourceTree = "<group>"; };
@@ -171,6 +177,7 @@
 		67122EEE7E798D244CDA0628 /* Steading.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Steading.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRunnerTests.swift; sourceTree = "<group>"; };
 		68961B44CFC5980E5DDEC556 /* BrewIndexLiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewIndexLiveTests.swift; sourceTree = "<group>"; };
+		73C511B7EB4A31C45750F740 /* BundleDefinitionVerifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleDefinitionVerifierTests.swift; sourceTree = "<group>"; };
 		7707938979911C8523D73059 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7C68F7A05734954EA423C2B6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		81F9C7A2DBF73EDA4A98A518 /* AppStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTests.swift; sourceTree = "<group>"; };
@@ -204,6 +211,7 @@
 		B3E76ECED5CE0ECEEF61BB2D /* PreferencesStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStoreTests.swift; sourceTree = "<group>"; };
 		B4A0E6672D72BEAD18364E0C /* BrewTapInfoParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewTapInfoParser.swift; sourceTree = "<group>"; };
 		B8794DE1ECD29CC0BF8B94D3 /* BrewStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewStatusBadge.swift; sourceTree = "<group>"; };
+		B9B944923330F45FCBA49BAF /* ExternalDefinitionScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalDefinitionScanner.swift; sourceTree = "<group>"; };
 		BAE4B102376FC6E3D88E0B21 /* SteadingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SteadingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BFDFCC0EABF501919870CFCF /* BrewUpdateManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewUpdateManagerTests.swift; sourceTree = "<group>"; };
 		C2355F8756FEB41710F77BF4 /* HostsEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostsEditorView.swift; sourceTree = "<group>"; };
@@ -276,6 +284,9 @@
 		15632D0CCD3F74126F41A735 /* ServiceDefinition */ = {
 			isa = PBXGroup;
 			children = (
+				0CF876A44CFB3DA64DE7C554 /* BundleDefinitionVerifier.swift */,
+				488C8E28EF31F98C105DEBE3 /* DefinitionHash.swift */,
+				B9B944923330F45FCBA49BAF /* ExternalDefinitionScanner.swift */,
 				A58CC8ED46D7ED29F1B03794 /* SchemaError.swift */,
 				195DB39EE0E2641F7D32AF7E /* ServiceDefinition.swift */,
 				F33CA5F4724D899C9282921D /* ServiceDefinitionLoader.swift */,
@@ -354,6 +365,7 @@
 				BFDFCC0EABF501919870CFCF /* BrewUpdateManagerTests.swift */,
 				4A94BF8F2724AB9FE821AC7B /* BrewUpdateScheduleTests.swift */,
 				67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */,
+				73C511B7EB4A31C45750F740 /* BundleDefinitionVerifierTests.swift */,
 				A384EE2CBFCF3CD0BF3BF127 /* HostsFileWriterTests.swift */,
 				B3E76ECED5CE0ECEEF61BB2D /* PreferencesStoreTests.swift */,
 				DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */,
@@ -582,10 +594,13 @@
 				8078EC400560936602AA6010 /* BuiltInServiceDetailView.swift in Sources */,
 				CADFD3BED81464CA0D745B1C /* BuiltInServiceRegistry.swift in Sources */,
 				5D8F1B92C479185B2A9E0180 /* BuiltInServiceRunner.swift in Sources */,
+				A89104DD2683B991748CDAA2 /* BundleDefinitionVerifier.swift in Sources */,
 				13CB00A9DB893D37E7E9F62E /* CatalogDetailView.swift in Sources */,
 				129B589725293E7C791250B6 /* CatalogItem.swift in Sources */,
 				1C4F0835A7C272784210CBF2 /* ContentView.swift in Sources */,
 				F6D6EA6618CB52F975430B15 /* DashboardView.swift in Sources */,
+				ED3F20926BAF905A95F2A330 /* DefinitionHash.swift in Sources */,
+				E7E98BF28F0D2B310BCEC668 /* ExternalDefinitionScanner.swift in Sources */,
 				035D79267322B25DF18C75B3 /* HostsEditorView.swift in Sources */,
 				3398A120057E163AA6C00C38 /* HostsFileWriter.swift in Sources */,
 				948E99504645C1D7F2CBCC54 /* MenuBarContent.swift in Sources */,
@@ -649,6 +664,7 @@
 				43F92A06298B21A5B13408F2 /* BrewUpdateManagerTests.swift in Sources */,
 				F38B7255E5E4933AAD9807E1 /* BrewUpdateScheduleTests.swift in Sources */,
 				04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */,
+				5E4709EA2206D802F6A3620B /* BundleDefinitionVerifierTests.swift in Sources */,
 				CA898660CB4E27D094823695 /* HostsFileWriterTests.swift in Sources */,
 				9A5A38922B0CBEF61331EE50 /* PreferencesStoreTests.swift in Sources */,
 				B6922DDBE8E384BB1C266E7C /* PrivHelperAllowlistTests.swift in Sources */,
