@@ -21,8 +21,11 @@
 
 - **2026-04-28** — Phase 1 opened. Working order: foundation (Yams + schema types + loader + hash script + verifier + refusal list) → helper extensions (XPC methods + approvals plist) → consent gate UI → picker + installed-services store → wizard renderer → install/uninstall pipeline → MySQL reference (tap + wrapper + mysql.yml) → status pane → view logs → edit config → failure recovery → catalog completion (5 remaining services + wrappers).
 - **2026-04-28** — Yams 5.4.0 added via SPM. xcodegen regenerated; Steading target builds clean with the new dependency. Yams is wired only into the Steading app target — the helper does not parse YAML, so it stays Yams-free.
+- **2026-04-28** — Schema types + ServiceDefinitionLoader landed with pure tests. 194/194 tests pass. Loader exercises strictness rejection (anchors/aliases/explicit tags), Yams Codable decode, and schema-invariant validation. Tests use inline YAML fixtures hitting the real loader.
 
 ## Decisions & Notes
+
+- **Yams strictness pre-pass:** Yams 5.4.0 holds `Node.anchor` as a weak reference, so anchors are gone from a composed Node tree by the time the loader walks it. Strictness check now does a source-byte scan (with quoted-string/comment stripping) before handing off to Yams' Codable decoder. Works for our schema; expected to false-positive on legitimate `&`/`*`/`!` in unquoted scalars (which would be unusual and easily fixed by quoting). Documented in code.
 
 ## Blockers
 
