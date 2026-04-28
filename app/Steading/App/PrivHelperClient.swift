@@ -229,6 +229,207 @@ final class PrivHelperClient {
         }
     }
 
+    // MARK: - Approvals
+
+    /// Record approval for a service-definition YAML.
+    func recordApproval(yamlPath: String, hash: String) async throws {
+        try await callBool { proxy, c in
+            proxy.recordApproval(yamlPath: yamlPath, hash: hash) { ok, msg in
+                c(ok, msg)
+            }
+        }
+    }
+
+    /// Fetch the helper's current approvals map (yamlPath → hash).
+    func listApprovals() async throws -> [String: String] {
+        let conn = try connect()
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[String: String], Swift.Error>) in
+            let proxy = conn.remoteObjectProxyWithErrorHandler { error in
+                continuation.resume(throwing: Error.xpcFailed(error.localizedDescription))
+            } as? SteadingPrivHelperProtocol
+            guard let proxy else { continuation.resume(throwing: Error.noProxy); return }
+            proxy.listApprovals { data, msg in
+                if !msg.isEmpty {
+                    continuation.resume(throwing: Error.helperError(code: -1, message: msg))
+                    return
+                }
+                do {
+                    let map = try JSONDecoder().decode([String: String].self, from: data)
+                    continuation.resume(returning: map)
+                } catch {
+                    continuation.resume(throwing: Error.xpcFailed(error.localizedDescription))
+                }
+            }
+        }
+    }
+
+    func forgetApproval(yamlPath: String) async throws {
+        try await callBool { proxy, c in
+            proxy.forgetApproval(yamlPath: yamlPath) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    // MARK: - Privileged file ops
+
+    func writeFile(path: String, mode: Int, ownerUID: Int, groupGID: Int,
+                   content: Data, yamlHash: String) async throws {
+        try await callBool { proxy, c in
+            proxy.writeFile(path: path, mode: mode,
+                            ownerUID: ownerUID, groupGID: groupGID,
+                            content: content, yamlHash: yamlHash) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    func readFile(path: String, yamlHash: String) async throws -> Data {
+        let conn = try connect()
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Swift.Error>) in
+            let proxy = conn.remoteObjectProxyWithErrorHandler { error in
+                continuation.resume(throwing: Error.xpcFailed(error.localizedDescription))
+            } as? SteadingPrivHelperProtocol
+            guard let proxy else { continuation.resume(throwing: Error.noProxy); return }
+            proxy.readFile(path: path, yamlHash: yamlHash) { data, msg in
+                if !msg.isEmpty {
+                    continuation.resume(throwing: Error.helperError(code: -1, message: msg))
+                } else {
+                    continuation.resume(returning: data)
+                }
+            }
+        }
+    }
+
+    func removeFile(path: String, yamlHash: String) async throws {
+        try await callBool { proxy, c in
+            proxy.removeFile(path: path, yamlHash: yamlHash) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    func makeDirectory(path: String, mode: Int, ownerUID: Int, groupGID: Int,
+                       yamlHash: String) async throws {
+        try await callBool { proxy, c in
+            proxy.makeDirectory(path: path, mode: mode,
+                                ownerUID: ownerUID, groupGID: groupGID,
+                                yamlHash: yamlHash) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    func removeDirectory(path: String, recursive: Bool, yamlHash: String) async throws {
+        try await callBool { proxy, c in
+            proxy.removeDirectory(path: path, recursive: recursive,
+                                  yamlHash: yamlHash) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    // MARK: - System users
+
+    /// Create a `_<service>` system user. Returns the resolved UID
+    /// (adopted Apple-blessed UID when the user already exists,
+    /// otherwise allocated from Steading's reserved range).
+    func createSystemUser(name: String, home: String, yamlHash: String) async throws -> Int {
+        let conn = try connect()
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Int, Swift.Error>) in
+            let proxy = conn.remoteObjectProxyWithErrorHandler { error in
+                continuation.resume(throwing: Error.xpcFailed(error.localizedDescription))
+            } as? SteadingPrivHelperProtocol
+            guard let proxy else { continuation.resume(throwing: Error.noProxy); return }
+            proxy.createSystemUser(name: name, home: home, yamlHash: yamlHash) { uid, msg in
+                if uid < 0 {
+                    continuation.resume(throwing: Error.helperError(code: -1, message: msg))
+                } else {
+                    continuation.resume(returning: uid)
+                }
+            }
+        }
+    }
+
+    func removeSystemUser(name: String, yamlHash: String) async throws {
+        try await callBool { proxy, c in
+            proxy.removeSystemUser(name: name, yamlHash: yamlHash) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    // MARK: - LaunchDaemons
+
+    func writeLaunchDaemon(label: String, plistData: Data, yamlHash: String) async throws {
+        try await callBool { proxy, c in
+            proxy.writeLaunchDaemon(label: label, plistData: plistData,
+                                    yamlHash: yamlHash) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    func loadLaunchDaemon(label: String) async throws {
+        try await callBool { proxy, c in
+            proxy.loadLaunchDaemon(label: label) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    func unloadLaunchDaemon(label: String) async throws {
+        try await callBool { proxy, c in
+            proxy.unloadLaunchDaemon(label: label) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    func bounceLaunchDaemon(label: String) async throws {
+        try await callBool { proxy, c in
+            proxy.bounceLaunchDaemon(label: label) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    func setLaunchDaemonDisabled(label: String, disabled: Bool) async throws {
+        try await callBool { proxy, c in
+            proxy.setLaunchDaemonDisabled(label: label, disabled: disabled) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    // MARK: - Firewall
+
+    func addFirewallRule(serviceLabel: String, allow: Bool, yamlHash: String) async throws {
+        try await callBool { proxy, c in
+            proxy.addFirewallRule(serviceLabel: serviceLabel, allow: allow,
+                                  yamlHash: yamlHash) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    func removeFirewallRule(serviceLabel: String, yamlHash: String) async throws {
+        try await callBool { proxy, c in
+            proxy.removeFirewallRule(serviceLabel: serviceLabel,
+                                     yamlHash: yamlHash) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    // MARK: - Install logging
+
+    func appendInstallLog(serviceID: String, sessionTimestamp: String, line: String) async throws {
+        try await callBool { proxy, c in
+            proxy.appendInstallLog(serviceID: serviceID,
+                                   sessionTimestamp: sessionTimestamp,
+                                   line: line) { ok, msg in c(ok, msg) }
+        }
+    }
+
+    // MARK: - Boilerplate reducer
+
+    /// Wraps the (Bool, String) reply pattern shared by every
+    /// helper-side mutator. Throws `Error.helperError` on `false`.
+    private func callBool(
+        _ invoke: (_ proxy: SteadingPrivHelperProtocol,
+                   _ callback: @escaping (Bool, String) -> Void) -> Void
+    ) async throws {
+        let conn = try connect()
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Swift.Error>) in
+            let proxy = conn.remoteObjectProxyWithErrorHandler { error in
+                continuation.resume(throwing: Error.xpcFailed(error.localizedDescription))
+            } as? SteadingPrivHelperProtocol
+            guard let proxy else { continuation.resume(throwing: Error.noProxy); return }
+            invoke(proxy) { ok, msg in
+                if ok {
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: Error.helperError(code: -1, message: msg))
+                }
+            }
+        }
+    }
+
     // MARK: - Connection
 
     private func connect() throws -> NSXPCConnection {

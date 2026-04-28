@@ -14,6 +14,8 @@
 		04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */; };
 		051FB78D75D68C7C13D40855 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE58958345FEE2847E8E57AE /* WelcomeView.swift */; };
 		08FA41D5EA90086176A8F033 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C68F7A05734954EA423C2B6 /* AppDelegate.swift */; };
+		120451F5CC910B8D41FF66DE /* PrivilegedFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F837E9D77743E66B245E553 /* PrivilegedFileWriter.swift */; };
+		12992226202FAAB025C3C1EB /* PrivHelperApprovalsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EBAA2D4368DE78326EFA241 /* PrivHelperApprovalsTests.swift */; };
 		129B589725293E7C791250B6 /* CatalogItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F631AFF0C04F2D5533E126C /* CatalogItem.swift */; };
 		13CB00A9DB893D37E7E9F62E /* CatalogDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2DB46FC31752B14A6A9B387 /* CatalogDetailView.swift */; };
 		17D2896D50A816EFBDD95128 /* PrivHelperAllowlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EFEB5D383616F979F1C63F /* PrivHelperAllowlist.swift */; };
@@ -36,6 +38,8 @@
 		42088FC441A8A07553C2513F /* ServiceDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 195DB39EE0E2641F7D32AF7E /* ServiceDefinition.swift */; };
 		43F92A06298B21A5B13408F2 /* BrewUpdateManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFDFCC0EABF501919870CFCF /* BrewUpdateManagerTests.swift */; };
 		48D41E34561E341D89307FAB /* BrewIndexParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6778F5A0DFB85CB50211162 /* BrewIndexParser.swift */; };
+		56CEF35CFE56B18A585EC898 /* PrivilegedFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F837E9D77743E66B245E553 /* PrivilegedFileWriter.swift */; };
+		56D35E1EE49D06A8B22D6250 /* PrivilegedFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F837E9D77743E66B245E553 /* PrivilegedFileWriter.swift */; };
 		58E3A110FC38ADBE656A70BC /* SteadingAskpass in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = E6FCB2944E0DB4A2F4E0FE3C /* SteadingAskpass */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		59BBEA3672EEDC23029E3C2B /* SteadingAskpassProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1197D1876ECB03BC47DBBFDF /* SteadingAskpassProtocol.swift */; };
 		5C2F5F90DF0D64C93A1123B0 /* WebappCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1607A01EF1A948C711D87CFC /* WebappCatalog.swift */; };
@@ -53,6 +57,7 @@
 		743FCC283A04402A9CDD7AA4 /* BuiltInCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 992A0F7706B92B084A1BDBF7 /* BuiltInCatalog.swift */; };
 		774658EDFBADE0C11997318B /* SteadingPrivHelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C7A751F5DDA87B5F0E5F2F /* SteadingPrivHelperProtocol.swift */; };
 		7CED68976FC6B58EB6D6E131 /* PrivHelperRefusalListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D2B764FC93840754E089424 /* PrivHelperRefusalListTests.swift */; };
+		7D1D9870498ED383DB06F657 /* ApprovalsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53AB4FC964E30D3C8C05ED5B /* ApprovalsStore.swift */; };
 		7E70D6B77420517022FAB427 /* ServiceDefinitionLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F33CA5F4724D899C9282921D /* ServiceDefinitionLoader.swift */; };
 		8078EC400560936602AA6010 /* BuiltInServiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B1E7B0845CEB8241142969C /* BuiltInServiceDetailView.swift */; };
 		842E4F8BFFE312B808F4D588 /* BrewPackageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8722163EF36F9FD647CD70CB /* BrewPackageManager.swift */; };
@@ -103,6 +108,7 @@
 		E89CE1926409C2113DE7F06C /* ServiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */; };
 		E93FA7ADAD9C302DCACCE6AB /* WriteTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0477BF18E09271875427100F /* WriteTarget.swift */; };
 		EB2C97840B93FBF7A5F4A358 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 455044AAFD76888EB755F58A /* SidebarView.swift */; };
+		EC0142FD19AE59B6C2DD63DF /* ApprovalsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53AB4FC964E30D3C8C05ED5B /* ApprovalsStore.swift */; };
 		ED3774B7E3CEC58A9DA29346 /* PrivHelperRefusalList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3626F88188924DC3761E477B /* PrivHelperRefusalList.swift */; };
 		ED3F20926BAF905A95F2A330 /* DefinitionHash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 488C8E28EF31F98C105DEBE3 /* DefinitionHash.swift */; };
 		ED95596C683C948EEC206B68 /* SteadingPrivHelper in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = E0ADD5FDB11E296C53AA5C23 /* SteadingPrivHelper */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -188,7 +194,9 @@
 		1C5B9FA877D00376140D115F /* Steading.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Steading.entitlements; sourceTree = "<group>"; };
 		1D2B764FC93840754E089424 /* PrivHelperRefusalListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperRefusalListTests.swift; sourceTree = "<group>"; };
 		1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewDetectorTests.swift; sourceTree = "<group>"; };
+		1F837E9D77743E66B245E553 /* PrivilegedFileWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivilegedFileWriter.swift; sourceTree = "<group>"; };
 		2154574024892E23EF74E084 /* Steading.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = Steading.icon; sourceTree = "<group>"; };
+		2EBAA2D4368DE78326EFA241 /* PrivHelperApprovalsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperApprovalsTests.swift; sourceTree = "<group>"; };
 		35D91110641303655AF49F7B /* PrivHelperClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperClient.swift; sourceTree = "<group>"; };
 		3626F88188924DC3761E477B /* PrivHelperRefusalList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperRefusalList.swift; sourceTree = "<group>"; };
 		3F2D64FA18F5484A45F5004F /* BrewJWSCacheLiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewJWSCacheLiveTests.swift; sourceTree = "<group>"; };
@@ -198,6 +206,7 @@
 		488C8E28EF31F98C105DEBE3 /* DefinitionHash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefinitionHash.swift; sourceTree = "<group>"; };
 		4A94BF8F2724AB9FE821AC7B /* BrewUpdateScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewUpdateScheduleTests.swift; sourceTree = "<group>"; };
 		518AD0434FFD8D998CAC5FB6 /* BuiltInServiceRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRunner.swift; sourceTree = "<group>"; };
+		53AB4FC964E30D3C8C05ED5B /* ApprovalsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApprovalsStore.swift; sourceTree = "<group>"; };
 		54B8036DEA6EE9477CF19521 /* BrewPackageManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewPackageManagerTests.swift; sourceTree = "<group>"; };
 		5E8CFDDE4D1C0F539DB354FD /* BottomStatusStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomStatusStrip.swift; sourceTree = "<group>"; };
 		67122EEE7E798D244CDA0628 /* Steading.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Steading.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -315,6 +324,7 @@
 				DEFC848ED345ADD229D74A5A /* HostsFileWriter.swift */,
 				B0EFEB5D383616F979F1C63F /* PrivHelperAllowlist.swift */,
 				3626F88188924DC3761E477B /* PrivHelperRefusalList.swift */,
+				1F837E9D77743E66B245E553 /* PrivilegedFileWriter.swift */,
 				1197D1876ECB03BC47DBBFDF /* SteadingAskpassProtocol.swift */,
 				95C7A751F5DDA87B5F0E5F2F /* SteadingPrivHelperProtocol.swift */,
 			);
@@ -428,6 +438,7 @@
 				A384EE2CBFCF3CD0BF3BF127 /* HostsFileWriterTests.swift */,
 				B3E76ECED5CE0ECEEF61BB2D /* PreferencesStoreTests.swift */,
 				DC4CE2F00E5776C9FBA1E8E6 /* PrivHelperAllowlistTests.swift */,
+				2EBAA2D4368DE78326EFA241 /* PrivHelperApprovalsTests.swift */,
 				1D2B764FC93840754E089424 /* PrivHelperRefusalListTests.swift */,
 				D7FAED18E92A4829A068A4A6 /* ServiceDefinitionLoaderTests.swift */,
 				8C98F968FED88BA446D39A53 /* StreamingProcessRunnerTests.swift */,
@@ -475,6 +486,7 @@
 		CC43D79913B64D2F1F08D4A5 /* SteadingPrivHelper */ = {
 			isa = PBXGroup;
 			children = (
+				53AB4FC964E30D3C8C05ED5B /* ApprovalsStore.swift */,
 				8E9A1CB32DC5FC5DBF3CB877 /* main.swift */,
 				9AA1D53A34F5A36CDB3D4188 /* PrivHelperListenerDelegate.swift */,
 				10A1713AF56D19F115490A16 /* PrivHelperService.swift */,
@@ -723,6 +735,7 @@
 				6DAE7C151728E1ECFB995D83 /* PrivHelperAllowlist.swift in Sources */,
 				BF5BEB980CBCF5EF87BE9855 /* PrivHelperClient.swift in Sources */,
 				ED3774B7E3CEC58A9DA29346 /* PrivHelperRefusalList.swift in Sources */,
+				56D35E1EE49D06A8B22D6250 /* PrivilegedFileWriter.swift in Sources */,
 				9D406F49ADA6A79196E73DF8 /* ProcessRunner.swift in Sources */,
 				949FEAC9DC5FA122C59896CC /* SchemaError.swift in Sources */,
 				E89CE1926409C2113DE7F06C /* ServiceCatalog.swift in Sources */,
@@ -743,11 +756,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D1D9870498ED383DB06F657 /* ApprovalsStore.swift in Sources */,
 				2387DF467AAFBCE2C3B4463D /* HostsFileWriter.swift in Sources */,
 				EF7CB3D4B2A650A7DD19CADC /* PrivHelperAllowlist.swift in Sources */,
 				18D98BF9F9860CAD63970523 /* PrivHelperListenerDelegate.swift in Sources */,
 				6AEBFA3D1A372DC902230B59 /* PrivHelperRefusalList.swift in Sources */,
 				F1F6D12782FC97DA4C8A45CD /* PrivHelperService.swift in Sources */,
+				120451F5CC910B8D41FF66DE /* PrivilegedFileWriter.swift in Sources */,
 				25EF154F4067B242900C2FF7 /* SteadingAskpassProtocol.swift in Sources */,
 				FAD92124A6EC7F2C722553D3 /* SteadingPrivHelperProtocol.swift in Sources */,
 				C03D42EA4DA31CDF685D457F /* main.swift in Sources */,
@@ -759,6 +774,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C11D86FFA26BB72DE065191C /* AppStateTests.swift in Sources */,
+				EC0142FD19AE59B6C2DD63DF /* ApprovalsStore.swift in Sources */,
 				BEBFA2E4D9DD0CD4C47DEA4C /* AskpassServiceTests.swift in Sources */,
 				A33B05709B05B662B4674A8E /* BrewDetectorTests.swift in Sources */,
 				DBF6D4C8B0B5785FCFC0AA1F /* BrewIndexLiveTests.swift in Sources */,
@@ -782,6 +798,7 @@
 				CA898660CB4E27D094823695 /* HostsFileWriterTests.swift in Sources */,
 				9A5A38922B0CBEF61331EE50 /* PreferencesStoreTests.swift in Sources */,
 				B6922DDBE8E384BB1C266E7C /* PrivHelperAllowlistTests.swift in Sources */,
+				12992226202FAAB025C3C1EB /* PrivHelperApprovalsTests.swift in Sources */,
 				7CED68976FC6B58EB6D6E131 /* PrivHelperRefusalListTests.swift in Sources */,
 				2E9A18249FE13459D50CA5B9 /* PrivHelperService.swift in Sources */,
 				67B1E19100A67C3C075A6CA2 /* ServiceDefinitionLoaderTests.swift in Sources */,
@@ -797,6 +814,7 @@
 				B7885D732028C9846E53905A /* HostsFileWriter.swift in Sources */,
 				17D2896D50A816EFBDD95128 /* PrivHelperAllowlist.swift in Sources */,
 				87BAB593C7F67EE8FCF2D782 /* PrivHelperRefusalList.swift in Sources */,
+				56CEF35CFE56B18A585EC898 /* PrivilegedFileWriter.swift in Sources */,
 				59BBEA3672EEDC23029E3C2B /* SteadingAskpassProtocol.swift in Sources */,
 				19244F8724758B76BA554E6E /* SteadingPrivHelperProtocol.swift in Sources */,
 				8770A4684E41B482F85F7161 /* main.swift in Sources */,

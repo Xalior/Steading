@@ -131,9 +131,10 @@ targets:
       # Compiled into the test bundle so XPCIntegrationTests can stand
       # up a real PrivHelperService behind an anonymous NSXPCListener.
       # The STEADING_TEST_HOST flag below switches on a conditional
-      # `@testable import Steading` inside the file so its bare-name
+      # `@testable import Steading` inside each file so bare-name
       # references to Shared/ types resolve from the main module.
       - path: SteadingPrivHelper/PrivHelperService.swift
+      - path: SteadingPrivHelper/ApprovalsStore.swift
     dependencies:
       - target: Steading
     settings:
