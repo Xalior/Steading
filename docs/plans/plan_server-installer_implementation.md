@@ -24,6 +24,8 @@
 - **2026-04-28** — Schema types + ServiceDefinitionLoader landed with pure tests. 194/194 tests pass. Loader exercises strictness rejection (anchors/aliases/explicit tags), Yams Codable decode, and schema-invariant validation. Tests use inline YAML fixtures hitting the real loader.
 - **2026-04-28** — DefinitionHash + BundleHashList + BundleDefinitionVerifier + ExternalDefinitionScanner landed. 201/201 tests pass.
 - **2026-04-28** — SteadingDefinitionValidator CLI target landed (signed, hardened-runtime), wired as Steading's pre-build phase to write .bundle-hashes.plist into the bundle. Live tests spawn the real binary; build-fail fixture confirmed via 'validate: malformed YAML exits non-zero'. CLI also embedded in Steading.app/Contents/Executables/ for third-party authors. 205/205 tests pass.
+- **2026-04-28** — PrivHelperRefusalList landed (pure Swift in Shared/, parametric tests over the blocklist). 219/219 pass.
+- **2026-04-28** — Privileged helper extended end-to-end: protocol grew from 3 methods to 21, ApprovalsStore (helper-only, root-owned plist), PrivilegedFileWriter generalising the atomic write path, full PrivHelperClient async wrappers, version bumped to 0.1.0. Live XPC tests cover approval round-trip, writeFile approval gating, refusal-list defense in depth (writes to /etc/sudoers refused even when approved). 226/226 pass.
 
 ## Decisions & Notes
 
