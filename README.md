@@ -92,6 +92,10 @@ xcodebuild -project Steading.xcodeproj -scheme Steading \
 
 macOS **Tahoe (26)** and forward. **Apple Silicon** only.
 
+## 🗺️ Roadmap
+
+- **Adoption of existing brew installs** — detecting that you already have a service (e.g. MySQL, Tailscale) installed via brew and offering to manage that install rather than duplicating it. On the active roadmap, not yet shipped.
+
 ## 📜 License
 
 MIT. See [LICENSE](LICENSE).

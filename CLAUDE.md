@@ -84,14 +84,20 @@ installed"). Use SSH (`admin`/`admin` via `sshpass`) for vanilla,
 `tart exec` for xcode and other non-vanilla images. `vm-up.sh`
 already probes both channels — don't special-case it further.
 
-### TART_HOME is repo-local
+### TART_HOME comes from `.env`
 
-Every tart invocation against this repo must set
-`TART_HOME=/Volumes/McFiver/u/GIT/Steading/tart` (or
-`$PWD/tart` from the repo root). Without it, tart silently falls
-back to `~/.tart/` and drops tens of GB of image blobs on the
-boot volume. `scripts/vm-*.sh` set it automatically; ad-hoc `tart …`
-invocations must prefix it explicitly.
+Every tart invocation against this repo must have `TART_HOME` set.
+The repo carries a gitignored `.env` at the root that sets it (and
+any other per-machine config); `scripts/vm-*.sh` source `.env`
+before running tart, falling back to `$PWD/tart` if `.env` is
+absent. Without `TART_HOME`, tart silently falls back to `~/.tart/`
+and drops tens of GB of image blobs on the boot volume. Ad-hoc
+`tart …` invocations from a shell where `.env` hasn't been sourced
+must prefix `TART_HOME=…` explicitly.
+
+Sharing one `TART_HOME` across multiple repos on the same machine
+is the supported pattern — base-image OCI blobs are pulled once and
+working VMs stay discrete per project.
 
 ### TaskStop kills nohup'd children
 
@@ -181,8 +187,6 @@ scripts/vm-down.sh steading-vanilla
 ## User's environment
 
 - Dev mac: macOS Tahoe 26.4, Xcode 26.3, Swift 6.2.4, Apple Silicon.
-- Repo volume: `/Volumes/McFiver` (external drive). VM images also
-  live there via `TART_HOME`.
 - User connects remotely via Claude Code in a browser —
   "almost like SSH" — so GUI clicks on the host require them to
   Screen Share in. Prefer non-GUI-dependent verification; when a

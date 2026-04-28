@@ -6,6 +6,10 @@
 tart/*
 !tart/README.md
 
+# Per-machine config picked up by scripts/vm-*.sh. Holds absolute
+# paths (TART_HOME, etc.) that vary between developers — never commit.
+.env
+
 # macOS
 .DS_Store
 

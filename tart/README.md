@@ -1,30 +1,26 @@
-# Tart VM home
+# Tart VM home (placeholder)
 
-All Tart VM images and working VMs live in this directory so they
-stay on `/Volumes/McFiver` instead of the boot volume. The directory
-itself is not committed — see the repo-root `.gitignore`.
+This directory exists only as a fallback location for `TART_HOME`
+when no `.env` is present at the repo root. In normal use, the
+project's `.env` (gitignored) points `TART_HOME` at wherever the
+developer keeps their VM blobs — typically a large external volume
+shared across multiple repos so the OCI base-image cache isn't
+duplicated.
 
-## Usage
+## Setup
 
-Every `tart` invocation for this repo MUST have `TART_HOME` pointing
-here. There are two equivalent ways:
+Create `<repo>/.env` at the repo root with:
 
 ```sh
-# Inline — robust, no state leakage between commands
-TART_HOME=/Volumes/McFiver/u/GIT/Steading/tart tart list
-TART_HOME=/Volumes/McFiver/u/GIT/Steading/tart tart clone \
-    ghcr.io/cirruslabs/macos-tahoe-xcode:26.4 steading-fresh
-
-# Or export once per shell session
-export TART_HOME=/Volumes/McFiver/u/GIT/Steading/tart
-tart list
+TART_HOME=/path/to/your/tart-home
 ```
 
-A plain `tart …` (with no `TART_HOME` set) will silently fall back
-to `~/.tart/` and drop multi-GB images on the boot volume — don't do
-that.
+`scripts/vm-*.sh` source this automatically. A plain `tart …`
+invocation from a shell where `.env` hasn't been sourced will need
+`TART_HOME=…` prefixed explicitly, otherwise tart silently falls
+back to `~/.tart/` and drops multi-GB images on the boot volume.
 
-## What lives under here
+## Layout under `TART_HOME`
 
 Tart creates these subdirectories on first use:
 
@@ -32,5 +28,4 @@ Tart creates these subdirectories on first use:
 - `cache/OCIs/` — pulled base images from the cirruslabs registry
 
 Both are huge (each macOS image is tens of GB) and entirely
-reproducible from the OCI registry, so none of this content is
-tracked by git.
+reproducible from the OCI registry.

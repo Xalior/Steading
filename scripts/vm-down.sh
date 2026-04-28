@@ -8,6 +8,8 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# .env override — see comment in vm-up.sh.
+[ -f "$REPO_ROOT/.env" ] && set -a && . "$REPO_ROOT/.env" && set +a
 export TART_HOME="${TART_HOME:-$REPO_ROOT/tart}"
 
 VM_NAME="${1:-steading-test}"

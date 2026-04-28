@@ -1,9 +1,10 @@
 # Scripts
 
 Host-side helpers for driving Tart VMs from the command line.
-Every script respects `TART_HOME` (defaulting to
-`$repo_root/tart/`) so all VM state lives alongside the repo on
-the McFiver volume.
+Every script sources `<repo>/.env` if present (gitignored —
+holds machine-specific paths like `TART_HOME`) and falls back to
+`$repo_root/tart/` when no `.env` is provided. See `tart/README.md`
+for the `.env` shape.
 
 ## Host dependencies
 
@@ -35,14 +36,13 @@ returns as soon as either answers.
 
 ## One-time setup
 
-Pull both base images once:
+Pull both base images once (assumes you've created `.env` at the
+repo root with your `TART_HOME`):
 
 ```sh
-TART_HOME=$PWD/tart \
-  tart pull ghcr.io/cirruslabs/macos-tahoe-xcode:26.4
-
-TART_HOME=$PWD/tart \
-  tart pull ghcr.io/cirruslabs/macos-tahoe-vanilla:26.4
+set -a; . ./.env; set +a
+tart pull ghcr.io/cirruslabs/macos-tahoe-xcode:26.4
+tart pull ghcr.io/cirruslabs/macos-tahoe-vanilla:26.4
 ```
 
 ## Day-to-day: build-test workflow

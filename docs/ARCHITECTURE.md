@@ -62,10 +62,8 @@ Steading/
 │   ├── vm-smoke.sh                ← in-VM build + test
 │   └── vm-down.sh                 ← tear down a working clone
 │
-├── tart/                          ← repo-local TART_HOME (gitignored)
-│   ├── cache/OCIs/                ← pulled base images (gold masters)
-│   ├── vms/                       ← working VM clones
-│   └── README.md
+├── tart/                          ← fallback TART_HOME if .env absent
+│   └── README.md                  ← documents the .env mechanism
 │
 └── docs/
     ├── ARCHITECTURE.md            ← this file
@@ -383,11 +381,13 @@ that reimplement logic. Patterns:
 | `macos-tahoe-xcode:26.4` | ~140 GB | `tart exec` (guest agent) | Build-test. Fresh checkout → xcodegen → xcodebuild build + test. |
 | `macos-tahoe-vanilla:26.4` | ~50 GB | `ssh admin@<ip>` via sshpass | Release-test. Matches a real user's machine with no dev tools. |
 
-`TART_HOME` is pinned to `<repo>/tart/` so all image blobs live on
-the repo's volume, not the boot disk. The gold masters in
-`tart/cache/OCIs/` are never mutated — every working VM is a CoW
-clone at `tart/vms/<name>/` that gets destroyed at the end of each
-test.
+`TART_HOME` is set per machine via a gitignored `<repo>/.env` so
+image blobs live wherever the developer chooses (typically a large
+external volume shared across multiple repos), never on the boot
+disk and never hardcoded into the repo. The gold masters in
+`$TART_HOME/cache/OCIs/` are never mutated — every working VM is a
+CoW clone at `$TART_HOME/vms/<name>/` that gets destroyed at the
+end of each test.
 
 The smoke script mounts the repo read-only into the VM via
 virtio-fs at `/Volumes/My Shared Files/Steading`, copies it to
