@@ -7,6 +7,11 @@ options:
   groupSortPosition: top
   generateEmptyDirectories: true
 
+packages:
+  Yams:
+    url: https://github.com/jpsim/Yams.git
+    from: 5.1.3
+
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -45,6 +50,7 @@ targets:
         embed: true
         copy:
           destination: executables
+      - package: Yams
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.xalior.Steading
