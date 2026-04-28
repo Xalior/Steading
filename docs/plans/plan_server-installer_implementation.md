@@ -20,6 +20,7 @@
 ## Progress Log
 
 - **2026-04-28** — Phase 1 opened. Working order: foundation (Yams + schema types + loader + hash script + verifier + refusal list) → helper extensions (XPC methods + approvals plist) → consent gate UI → picker + installed-services store → wizard renderer → install/uninstall pipeline → MySQL reference (tap + wrapper + mysql.yml) → status pane → view logs → edit config → failure recovery → catalog completion (5 remaining services + wrappers).
+- **2026-04-28** — Yams 5.4.0 added via SPM. xcodegen regenerated; Steading target builds clean with the new dependency. Yams is wired only into the Steading app target — the helper does not parse YAML, so it stays Yams-free.
 
 ## Decisions & Notes
 
