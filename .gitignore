@@ -13,5 +13,14 @@ tart/*
 # macOS
 .DS_Store
 
+# Coverage profile data dropped by xcodebuild
+*.profraw
+
+# Build-phase generated bundle hash list. SteadingDefinitionValidator
+# writes this on every build of the Steading target so the runtime
+# can verify per-YAML integrity against build-time hashes; the file
+# is regenerated each build, not source.
+app/Steading/Resources/ServiceDefinitions/.bundle-hashes.plist
+
 # Workflow docs
 docs/discovery/*.md

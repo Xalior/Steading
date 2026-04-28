@@ -50,7 +50,21 @@ targets:
         embed: true
         copy:
           destination: executables
+      - target: SteadingDefinitionValidator
+        embed: true
+        copy:
+          destination: executables
       - package: Yams
+    preBuildScripts:
+      - script: |
+          set -euo pipefail
+          VALIDATOR="${BUILT_PRODUCTS_DIR}/steading-definition-validator"
+          DEFS_DIR="${SRCROOT}/Steading/Resources/ServiceDefinitions"
+          mkdir -p "${DEFS_DIR}"
+          "${VALIDATOR}" hashlist "${DEFS_DIR}" --output "${DEFS_DIR}/.bundle-hashes.plist"
+        name: Validate and hash service definitions
+        outputFiles:
+          - $(SRCROOT)/Steading/Resources/ServiceDefinitions/.bundle-hashes.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.xalior.Steading
@@ -90,6 +104,22 @@ targets:
         PRODUCT_NAME: steading-askpass
         PRODUCT_BUNDLE_IDENTIFIER: com.xalior.Steading.askpass
         OTHER_CODE_SIGN_FLAGS: --identifier com.xalior.Steading.askpass
+        SKIP_INSTALL: YES
+        ENABLE_HARDENED_RUNTIME: YES
+
+  SteadingDefinitionValidator:
+    type: tool
+    platform: macOS
+    sources:
+      - path: SteadingDefinitionValidator
+      - path: Steading/Model/ServiceDefinition
+    dependencies:
+      - package: Yams
+    settings:
+      base:
+        PRODUCT_NAME: steading-definition-validator
+        PRODUCT_BUNDLE_IDENTIFIER: com.xalior.Steading.definitionvalidator
+        OTHER_CODE_SIGN_FLAGS: --identifier com.xalior.Steading.definitionvalidator
         SKIP_INSTALL: YES
         ENABLE_HARDENED_RUNTIME: YES
 
