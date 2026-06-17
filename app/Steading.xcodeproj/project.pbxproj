@@ -13,6 +13,7 @@
 		0473162414D5D26E25A7411D /* BrewDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B0EE6A70B228F7CB0D472F /* BrewDetector.swift */; };
 		04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */; };
 		051FB78D75D68C7C13D40855 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE58958345FEE2847E8E57AE /* WelcomeView.swift */; };
+		05E25F911F1816B833117753 /* TailscaleInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 593EA657EFEE30330B41B368 /* TailscaleInstaller.swift */; };
 		08FA41D5EA90086176A8F033 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C68F7A05734954EA423C2B6 /* AppDelegate.swift */; };
 		120451F5CC910B8D41FF66DE /* PrivilegedFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F837E9D77743E66B245E553 /* PrivilegedFileWriter.swift */; };
 		12992226202FAAB025C3C1EB /* PrivHelperApprovalsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EBAA2D4368DE78326EFA241 /* PrivHelperApprovalsTests.swift */; };
@@ -52,12 +53,14 @@
 		68997DD6551727AE72A46EFE /* OutdatedPackage.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFA4E88AC5D08D8FA130E2DE /* OutdatedPackage.swift */; };
 		6AEBFA3D1A372DC902230B59 /* PrivHelperRefusalList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3626F88188924DC3761E477B /* PrivHelperRefusalList.swift */; };
 		6DAE7C151728E1ECFB995D83 /* PrivHelperAllowlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EFEB5D383616F979F1C63F /* PrivHelperAllowlist.swift */; };
+		701D342E68299632114DE381 /* TailscaleDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B105D79856584D40EB67844 /* TailscaleDetailView.swift */; };
 		70CBA965C885F41C91FA5CB2 /* ServiceDefinitionLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F33CA5F4724D899C9282921D /* ServiceDefinitionLoader.swift */; };
 		72F8B296A8541A8CDD1ABF2C /* BrewUpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11DE03FCAB6FBF055721439 /* BrewUpdateManager.swift */; };
 		743FCC283A04402A9CDD7AA4 /* BuiltInCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 992A0F7706B92B084A1BDBF7 /* BuiltInCatalog.swift */; };
 		774658EDFBADE0C11997318B /* SteadingPrivHelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C7A751F5DDA87B5F0E5F2F /* SteadingPrivHelperProtocol.swift */; };
 		7CED68976FC6B58EB6D6E131 /* PrivHelperRefusalListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D2B764FC93840754E089424 /* PrivHelperRefusalListTests.swift */; };
 		7D1D9870498ED383DB06F657 /* ApprovalsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53AB4FC964E30D3C8C05ED5B /* ApprovalsStore.swift */; };
+		7D882A501F67E85DC50D0E52 /* TailscaleDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 921E819A9D1870FEF9C52EE8 /* TailscaleDetectorTests.swift */; };
 		7E70D6B77420517022FAB427 /* ServiceDefinitionLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F33CA5F4724D899C9282921D /* ServiceDefinitionLoader.swift */; };
 		8078EC400560936602AA6010 /* BuiltInServiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B1E7B0845CEB8241142969C /* BuiltInServiceDetailView.swift */; };
 		80DA20A30B4A42EDE8A5F8E8 /* AdminAuthorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7235EAE1095DED7F6E54C654 /* AdminAuthorization.swift */; };
@@ -95,6 +98,7 @@
 		CA898660CB4E27D094823695 /* HostsFileWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A384EE2CBFCF3CD0BF3BF127 /* HostsFileWriterTests.swift */; };
 		CADFD3BED81464CA0D745B1C /* BuiltInServiceRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE01FD58CA5CED026DC5AF1 /* BuiltInServiceRegistry.swift */; };
 		CEB8D84BCEEA47B55311C488 /* BrewPackageManagerApplyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CFB6005BEF1B262E13049D2 /* BrewPackageManagerApplyTests.swift */; };
+		D07614D9BB81DACBC527CB32 /* TailscaleDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9043C2933647BD7888495D90 /* TailscaleDetector.swift */; };
 		D3395D25685248895A84A727 /* BrewTapInfoParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C10F314216E33AA382BFF09 /* BrewTapInfoParserTests.swift */; };
 		D3ABE16AD86F5DA34022C7F5 /* ExternalDefinitionScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B944923330F45FCBA49BAF /* ExternalDefinitionScanner.swift */; };
 		D527815A14F8538F51113945 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = F10D77874288277EF44889B3 /* Yams */; };
@@ -194,6 +198,7 @@
 		195DB39EE0E2641F7D32AF7E /* ServiceDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDefinition.swift; sourceTree = "<group>"; };
 		1A190D0EF6F2E44373C7A6DA /* BrewOutdatedParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewOutdatedParserTests.swift; sourceTree = "<group>"; };
 		1AA635A3848267492662B980 /* XPCIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCIntegrationTests.swift; sourceTree = "<group>"; };
+		1B105D79856584D40EB67844 /* TailscaleDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TailscaleDetailView.swift; sourceTree = "<group>"; };
 		1C5B9FA877D00376140D115F /* Steading.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Steading.entitlements; sourceTree = "<group>"; };
 		1D2B764FC93840754E089424 /* PrivHelperRefusalListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivHelperRefusalListTests.swift; sourceTree = "<group>"; };
 		1DBBE1D86366DD5B8C7CA5AA /* BrewDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewDetectorTests.swift; sourceTree = "<group>"; };
@@ -212,6 +217,7 @@
 		518AD0434FFD8D998CAC5FB6 /* BuiltInServiceRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRunner.swift; sourceTree = "<group>"; };
 		53AB4FC964E30D3C8C05ED5B /* ApprovalsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApprovalsStore.swift; sourceTree = "<group>"; };
 		54B8036DEA6EE9477CF19521 /* BrewPackageManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewPackageManagerTests.swift; sourceTree = "<group>"; };
+		593EA657EFEE30330B41B368 /* TailscaleInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TailscaleInstaller.swift; sourceTree = "<group>"; };
 		5E8CFDDE4D1C0F539DB354FD /* BottomStatusStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomStatusStrip.swift; sourceTree = "<group>"; };
 		67122EEE7E798D244CDA0628 /* Steading.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Steading.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRunnerTests.swift; sourceTree = "<group>"; };
@@ -230,6 +236,8 @@
 		8AAF16B2DF90D69AD1CF6BD3 /* AskpassServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskpassServiceTests.swift; sourceTree = "<group>"; };
 		8C98F968FED88BA446D39A53 /* StreamingProcessRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingProcessRunnerTests.swift; sourceTree = "<group>"; };
 		8E9A1CB32DC5FC5DBF3CB877 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		9043C2933647BD7888495D90 /* TailscaleDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TailscaleDetector.swift; sourceTree = "<group>"; };
+		921E819A9D1870FEF9C52EE8 /* TailscaleDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TailscaleDetectorTests.swift; sourceTree = "<group>"; };
 		95A07A01220FB216FE73389B /* PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
 		95C7A751F5DDA87B5F0E5F2F /* SteadingPrivHelperProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteadingPrivHelperProtocol.swift; sourceTree = "<group>"; };
 		96B0EE6A70B228F7CB0D472F /* BrewDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewDetector.swift; sourceTree = "<group>"; };
@@ -321,6 +329,8 @@
 				47A7FDF1CF6DD4DD317F06EE /* ProcessRunner.swift */,
 				FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */,
 				18E91170EE26FA46A90E86CF /* StreamingProcessRunner.swift */,
+				9043C2933647BD7888495D90 /* TailscaleDetector.swift */,
+				593EA657EFEE30330B41B368 /* TailscaleInstaller.swift */,
 				1607A01EF1A948C711D87CFC /* WebappCatalog.swift */,
 			);
 			path = Model;
@@ -399,6 +409,7 @@
 				C467073801088A7E44BC4B9F /* PreferencesView.swift */,
 				7629732E9110429852264319 /* ServiceDefinitionApprovalSheet.swift */,
 				455044AAFD76888EB755F58A /* SidebarView.swift */,
+				1B105D79856584D40EB67844 /* TailscaleDetailView.swift */,
 				CE58958345FEE2847E8E57AE /* WelcomeView.swift */,
 			);
 			path = Views;
@@ -451,6 +462,7 @@
 				1D2B764FC93840754E089424 /* PrivHelperRefusalListTests.swift */,
 				D7FAED18E92A4829A068A4A6 /* ServiceDefinitionLoaderTests.swift */,
 				8C98F968FED88BA446D39A53 /* StreamingProcessRunnerTests.swift */,
+				921E819A9D1870FEF9C52EE8 /* TailscaleDetectorTests.swift */,
 				1AA635A3848267492662B980 /* XPCIntegrationTests.swift */,
 			);
 			path = SteadingTests;
@@ -758,6 +770,9 @@
 				92B0F16F6C4B01A8EAB1C828 /* SteadingAskpassProtocol.swift in Sources */,
 				774658EDFBADE0C11997318B /* SteadingPrivHelperProtocol.swift in Sources */,
 				93515F79B24EE2EC3E0C772B /* StreamingProcessRunner.swift in Sources */,
+				701D342E68299632114DE381 /* TailscaleDetailView.swift in Sources */,
+				D07614D9BB81DACBC527CB32 /* TailscaleDetector.swift in Sources */,
+				05E25F911F1816B833117753 /* TailscaleInstaller.swift in Sources */,
 				5C2F5F90DF0D64C93A1123B0 /* WebappCatalog.swift in Sources */,
 				051FB78D75D68C7C13D40855 /* WelcomeView.swift in Sources */,
 				28008068CDAF4D278A021256 /* WriteTarget.swift in Sources */,
@@ -815,6 +830,7 @@
 				2E9A18249FE13459D50CA5B9 /* PrivHelperService.swift in Sources */,
 				67B1E19100A67C3C075A6CA2 /* ServiceDefinitionLoaderTests.swift in Sources */,
 				86C9E6A942CB133A1FE09892 /* StreamingProcessRunnerTests.swift in Sources */,
+				7D882A501F67E85DC50D0E52 /* TailscaleDetectorTests.swift in Sources */,
 				E77AC5212B5A9B36D0598DB9 /* XPCIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

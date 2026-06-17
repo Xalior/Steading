@@ -32,8 +32,19 @@ final class AppState {
         case ready(HelperStatus)
     }
 
+    enum TailscaleCheckState: Equatable {
+        case idle
+        case checking
+        case ready(TailscaleDetector.Status)
+    }
+
     var brewCheck: BrewCheckState = .idle
     var helperCheck: HelperCheckState = .idle
+    /// Tailscale flavour present on this Mac. Detected once at launch
+    /// (nothing removes Tailscale out from under a running app, and the
+    /// MAS→open-source migration ends in a reboot that restarts the
+    /// app), then refreshed only after this app's own `brew install`.
+    var tailscaleCheck: TailscaleCheckState = .idle
     var registrationError: String?
     var selection: CatalogItem.ID?
 
@@ -43,9 +54,12 @@ final class AppState {
     let definitionRegistry = DefinitionRegistry()
 
     private let detector: BrewDetector
+    private let tailscaleDetector: TailscaleDetector
 
-    init(detector: BrewDetector = BrewDetector()) {
+    init(detector: BrewDetector = BrewDetector(),
+         tailscaleDetector: TailscaleDetector = TailscaleDetector()) {
         self.detector = detector
+        self.tailscaleDetector = tailscaleDetector
     }
 
     // MARK: - Definition registry
@@ -98,6 +112,16 @@ final class AppState {
         brewCheck = .checking
         let status = await detector.detect()
         brewCheck = .ready(status)
+    }
+
+    // MARK: - Tailscale
+
+    /// Detect which Tailscale flavour is present. Called once at launch
+    /// and again after this app installs the open-source formula, so
+    /// the pane flips from its install button to the installed state.
+    func refreshTailscaleStatus() async {
+        tailscaleCheck = .checking
+        tailscaleCheck = .ready(await tailscaleDetector.detect())
     }
 
     // MARK: - Privileged helper

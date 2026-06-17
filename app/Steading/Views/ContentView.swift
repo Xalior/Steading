@@ -48,6 +48,8 @@ struct ContentView: View {
                 } else {
                     CatalogDetailView(item: item)
                 }
+            case .service where item.id == "tailscale":
+                TailscaleDetailView(item: item)
             case .service, .webapp:
                 CatalogDetailView(item: item)
             }

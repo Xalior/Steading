@@ -38,6 +38,9 @@ struct SteadingApp: App {
             .task {
                 await appState.refreshBrewStatus()
                 appState.refreshHelperStatus()
+                // One-shot Tailscale detection. The result is cached for
+                // the session — see AppState.tailscaleCheck.
+                await appState.refreshTailscaleStatus()
                 appDelegate.isApplyInFlight = { brewPackages.state == .applying }
                 askpassService.start()
                 brewUpdates.start()
