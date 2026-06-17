@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 /// UI-facing brew model for the Brew Package Manager window. Owns the
-/// unified package index loaded from brew's JWS cache + the
+/// unified package index loaded from brew's internal JWS index + the
 /// Steading-owned tap cache, the sidebar mode + its filters, per-row
 /// marking state, the batched Apply pipeline (add phase before remove
 /// phase, with a post-uninstall autoremove confirmation), and the
@@ -248,11 +248,11 @@ final class BrewPackageManager {
     /// don't need streaming output.
     typealias Runner = BrewUpdateManager.Runner
 
-    /// Resolves the on-disk path for one of brew's JWS cache files
-    /// (`formula.jws.json` / `cask.jws.json`). Returns `nil` when
-    /// the cache is unavailable for that kind — the loader treats
-    /// that as "no entries from this source", not an error.
-    typealias JWSCachePathResolver = @Sendable (BrewIndexEntry.Kind) -> URL?
+    /// Resolves the on-disk path for brew 6's consolidated internal
+    /// package index (`api/internal/packages.<tag>.jws.json`). Returns
+    /// `nil` when the file is unavailable — the loader treats that as
+    /// "no entries from this source", not an error.
+    typealias PackagesIndexPathResolver = @Sendable () -> URL?
 
     /// Resolves the on-disk path for the Steading-owned tap-cache
     /// file (`~/Library/Caches/com.xalior.Steading/tap-index.json`).
@@ -268,7 +268,7 @@ final class BrewPackageManager {
 
     private let runner: Runner
     private let subCallRunner: SubCallRunner
-    private let jwsCachePathResolver: JWSCachePathResolver
+    private let packagesIndexPathResolver: PackagesIndexPathResolver
     private let tapIndexCachePathResolver: TapIndexCachePathResolver
     private let dataReader: DataReader
     private var applyTask: Task<Void, Never>?
@@ -285,12 +285,12 @@ final class BrewPackageManager {
 
     init(runner: @escaping Runner = BrewUpdateManager.defaultRunner,
          subCallRunner: @escaping SubCallRunner = BrewPackageManager.defaultSubCallRunner(),
-         jwsCachePathResolver: @escaping JWSCachePathResolver = BrewPackageManager.defaultJWSCachePathResolver,
+         packagesIndexPathResolver: @escaping PackagesIndexPathResolver = BrewPackageManager.defaultPackagesIndexPathResolver,
          tapIndexCachePathResolver: @escaping TapIndexCachePathResolver = BrewUpdateManager.defaultTapIndexCachePathResolver,
          dataReader: @escaping DataReader = BrewPackageManager.defaultDataReader) {
         self.runner = runner
         self.subCallRunner = subCallRunner
-        self.jwsCachePathResolver = jwsCachePathResolver
+        self.packagesIndexPathResolver = packagesIndexPathResolver
         self.tapIndexCachePathResolver = tapIndexCachePathResolver
         self.dataReader = dataReader
         self.state = .idle
@@ -363,8 +363,9 @@ final class BrewPackageManager {
 
     // MARK: - Index loader / tap add+remove
 
-    /// Refresh the in-memory index. Reads the JWS caches + the
-    /// Steading tap-cache from disk, spawns `brew list` to derive
+    /// Refresh the in-memory index. Reads brew 6's consolidated
+    /// internal index + the Steading tap-cache from disk, spawns
+    /// `brew list` to derive
     /// installed/pinned sets, spawns `brew tap-info` to populate the
     /// Origin sidebar, and composes the result into `rows` + `taps`.
     /// Each call always runs against its own `outdated` argument —
@@ -416,13 +417,12 @@ final class BrewPackageManager {
     private func runRefresh(outdated: [OutdatedPackage],
                             generation: Int,
                             priorState: State) async {
-        // 1. Disk-resident universe sources. The JWS files are
-        // ~30 MB / ~15 MB on a typical dev mac and the JSON parse is
+        // 1. Disk-resident universe sources. brew 6's consolidated
+        // index is ~15 MB on a typical dev mac and the JSON parse is
         // multi-second; running it on the main actor blanks the UI
         // (even a loading spinner can't animate). Detach the read +
         // parse so the @MainActor stays responsive while we wait.
-        let formulaeFromCache = await readJWSEntriesAsync(kind: .formula)
-        let casksFromCache = await readJWSEntriesAsync(kind: .cask)
+        let packagesFromCache = await readPackagesIndexAsync()
         let tapPackages = await readTapIndexEntriesAsync()
 
         // 2. Subprocess sources.
@@ -440,7 +440,7 @@ final class BrewPackageManager {
         let pinned = Set(pinnedNames)
         let outdatedTokens = Set(outdated.map(\.name))
 
-        let allEntries = formulaeFromCache + casksFromCache + tapPackages
+        let allEntries = packagesFromCache + tapPackages
         let composedRows = allEntries.map { entry -> PackageRow in
             let token = entry.token
             let full = entry.fullToken
@@ -463,16 +463,13 @@ final class BrewPackageManager {
         }
     }
 
-    private func readJWSEntriesAsync(kind: BrewIndexEntry.Kind) async -> [BrewIndexEntry] {
-        let resolver = jwsCachePathResolver
+    private func readPackagesIndexAsync() async -> [BrewIndexEntry] {
+        let resolver = packagesIndexPathResolver
         let reader = dataReader
         return await Task.detached(priority: .userInitiated) {
-            guard let url = resolver(kind) else { return [] }
+            guard let url = resolver() else { return [] }
             guard let data = try? reader(url) else { return [] }
-            switch kind {
-            case .formula: return (try? BrewIndexParser.parseJWSFormulae(data)) ?? []
-            case .cask:    return (try? BrewIndexParser.parseJWSCasks(data)) ?? []
-            }
+            return (try? BrewIndexParser.parsePackagesIndex(data)) ?? []
         }.value
     }
 
@@ -695,20 +692,25 @@ final class BrewPackageManager {
         return SubCallHandle(events: stream, cancel: {})
     }
 
-    /// Default JWS-cache path resolver: brew's standard
-    /// `~/Library/Caches/Homebrew/api/{formula,cask}.jws.json`.
-    /// Returns `nil` if the file is missing — the loader treats that
-    /// as "no entries", not a hard error.
-    nonisolated static let defaultJWSCachePathResolver: JWSCachePathResolver = { kind in
+    /// Default packages-index path resolver: brew 6's consolidated
+    /// internal index, which is platform-specific
+    /// (`packages.arm64_tahoe.jws.json` and so on). Rather than
+    /// reconstruct the bottle tag from the running OS — which would
+    /// need a macOS-codename map maintained per release — we glob the
+    /// `internal/` directory for the single `packages.*.jws.json` file
+    /// brew generates for this host. Returns `nil` if the directory or
+    /// file is missing; the loader treats that as "no entries", not a
+    /// hard error.
+    nonisolated static let defaultPackagesIndexPathResolver: PackagesIndexPathResolver = {
         let home = FileManager.default.homeDirectoryForCurrentUser
-        let dir = home.appendingPathComponent("Library/Caches/Homebrew/api/", isDirectory: true)
-        let filename: String
-        switch kind {
-        case .formula: filename = "formula.jws.json"
-        case .cask:    filename = "cask.jws.json"
+        let dir = home.appendingPathComponent(
+            "Library/Caches/Homebrew/api/internal/", isDirectory: true)
+        let contents = (try? FileManager.default.contentsOfDirectory(
+            at: dir, includingPropertiesForKeys: nil)) ?? []
+        return contents.first { url in
+            let name = url.lastPathComponent
+            return name.hasPrefix("packages.") && name.hasSuffix(".jws.json")
         }
-        let url = dir.appendingPathComponent(filename)
-        return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
     /// Default file reader: `Data(contentsOf:)` with no special

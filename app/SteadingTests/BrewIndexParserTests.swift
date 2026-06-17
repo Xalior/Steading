@@ -3,82 +3,94 @@ import Foundation
 @testable import Steading
 
 /// Pure-parser tests for `BrewIndexParser`. Inline fixtures cover the
-/// three on-disk shapes Steading reads:
-/// 1. brew's JWS-format `formula.jws.json` (envelope-wrapped JSON
-///    string whose decoded payload is an array of formula entries),
-/// 2. brew's JWS-format `cask.jws.json` (same envelope, array of cask
-///    entries),
-/// 3. the `{"formulae":[…], "casks":[…]}` envelope brew emits from
+/// two on-disk shapes Steading reads:
+/// 1. brew 6's consolidated internal index
+///    (`api/internal/packages.<tag>.jws.json`) — an envelope-wrapped
+///    JSON string whose decoded payload is an *object* with `formulae`
+///    / `casks` members keyed by package token,
+/// 2. the `{"formulae":[…], "casks":[…]}` envelope brew emits from
 ///    `brew info --json=v2` and the Steading-owned tap-cache file
 ///    uses on disk.
 @Suite("BrewIndexParser")
 struct BrewIndexParserTests {
 
-    // MARK: - JWS envelope (formula)
+    // MARK: - Packages index (brew 6 internal)
 
-    @Test("parseJWSFormulae unwraps the JWS envelope and decodes formula entries")
-    func parseJWSFormulae_typical() throws {
+    @Test("parsePackagesIndex unwraps the envelope and decodes formula + cask entries")
+    func parsePackagesIndex_typical() throws {
         let payload = #"""
-        [
-          {"name":"git","full_name":"git","tap":"homebrew/core","desc":"Distributed revision control system"},
-          {"name":"jq","full_name":"jq","tap":"homebrew/core","desc":"Lightweight and flexible command-line JSON processor"}
-        ]
+        {
+          "metadata": {"bottle_tag":"arm64_tahoe"},
+          "formulae": {
+            "git": {"desc":"Distributed revision control system"},
+            "jq": {"desc":"Lightweight and flexible command-line JSON processor"}
+          },
+          "casks": {
+            "firefox": {"desc":"Web browser","tap_string":"homebrew/cask"}
+          }
+        }
         """#
-        let envelope = jwsEnvelope(payload: payload)
+        let entries = try BrewIndexParser.parsePackagesIndex(jwsEnvelope(payload: payload))
 
-        let entries = try BrewIndexParser.parseJWSFormulae(envelope)
+        #expect(entries.count == 3)
 
-        #expect(entries.count == 2)
         let git = try #require(entries.first { $0.token == "git" })
         #expect(git.fullToken == "git")
         #expect(git.tap == "homebrew/core")
         #expect(git.desc == "Distributed revision control system")
         #expect(git.kind == .formula)
+
+        let firefox = try #require(entries.first { $0.token == "firefox" })
+        #expect(firefox.fullToken == "firefox")
+        #expect(firefox.tap == "homebrew/cask")
+        #expect(firefox.desc == "Web browser")
+        #expect(firefox.kind == .cask)
     }
 
-    @Test("parseJWSFormulae tolerates a null desc (some formulae have no description)")
-    func parseJWSFormulae_nullDesc() throws {
+    @Test("parsePackagesIndex tolerates a null desc (some formulae have no description)")
+    func parsePackagesIndex_nullDesc() throws {
         let payload = #"""
-        [{"name":"x","full_name":"x","tap":"homebrew/core","desc":null}]
+        {"formulae":{"x":{"desc":null}},"casks":{}}
         """#
-        let entries = try BrewIndexParser.parseJWSFormulae(jwsEnvelope(payload: payload))
+        let entries = try BrewIndexParser.parsePackagesIndex(jwsEnvelope(payload: payload))
         #expect(entries.first?.desc == nil)
     }
 
-    @Test("parseJWSFormulae throws ParseError.invalidJWSEnvelope when payload field is missing")
-    func parseJWSFormulae_missingPayload() {
+    @Test("parsePackagesIndex falls back to homebrew/cask when a cask omits tap_string")
+    func parsePackagesIndex_caskTapFallback() throws {
+        let payload = #"""
+        {"formulae":{},"casks":{"0-ad":{"desc":"Game"}}}
+        """#
+        let entries = try BrewIndexParser.parsePackagesIndex(jwsEnvelope(payload: payload))
+        let cask = try #require(entries.first { $0.token == "0-ad" })
+        #expect(cask.tap == "homebrew/cask")
+        #expect(cask.kind == .cask)
+    }
+
+    @Test("parsePackagesIndex orders formulae then casks, each sorted by token")
+    func parsePackagesIndex_deterministicOrder() throws {
+        let payload = #"""
+        {"formulae":{"zlib":{"desc":null},"aria2":{"desc":null}},
+         "casks":{"zoom":{"desc":null},"alfred":{"desc":null}}}
+        """#
+        let entries = try BrewIndexParser.parsePackagesIndex(jwsEnvelope(payload: payload))
+        #expect(entries.map(\.token) == ["aria2", "zlib", "alfred", "zoom"])
+    }
+
+    @Test("parsePackagesIndex throws ParseError.invalidJWSEnvelope when payload field is missing")
+    func parsePackagesIndex_missingPayload() {
         let bad = #"{"signatures":[]}"#.data(using: .utf8)!
         #expect(throws: BrewIndexParser.ParseError.invalidJWSEnvelope) {
-            _ = try BrewIndexParser.parseJWSFormulae(bad)
+            _ = try BrewIndexParser.parsePackagesIndex(bad)
         }
     }
 
-    @Test("parseJWSFormulae throws when payload is not a JSON-encoded string")
-    func parseJWSFormulae_payloadNotString() {
+    @Test("parsePackagesIndex throws when payload is not a JSON-encoded string")
+    func parsePackagesIndex_payloadNotString() {
         let bad = #"{"payload":[1,2,3]}"#.data(using: .utf8)!
         #expect(throws: BrewIndexParser.ParseError.invalidJWSEnvelope) {
-            _ = try BrewIndexParser.parseJWSFormulae(bad)
+            _ = try BrewIndexParser.parsePackagesIndex(bad)
         }
-    }
-
-    // MARK: - JWS envelope (cask)
-
-    @Test("parseJWSCasks decodes the cask-shape per-entry keys (token / full_token)")
-    func parseJWSCasks_typical() throws {
-        let payload = #"""
-        [
-          {"token":"firefox","full_token":"firefox","tap":"homebrew/cask","desc":"Web browser"},
-          {"token":"chamber","full_token":"cirruslabs/cli/chamber","tap":"cirruslabs/cli","desc":null}
-        ]
-        """#
-        let entries = try BrewIndexParser.parseJWSCasks(jwsEnvelope(payload: payload))
-
-        #expect(entries.count == 2)
-        let chamber = try #require(entries.first { $0.token == "chamber" })
-        #expect(chamber.fullToken == "cirruslabs/cli/chamber")
-        #expect(chamber.tap == "cirruslabs/cli")
-        #expect(chamber.desc == nil)
-        #expect(chamber.kind == .cask)
     }
 
     // MARK: - Info envelope

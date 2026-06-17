@@ -1,12 +1,12 @@
 import Foundation
 
 /// One brew package — either a formula or a cask — flattened into a
-/// shape the package-manager UI keys on. Decoded from any of three
+/// shape the package-manager UI keys on. Decoded from one of two
 /// sources by [`BrewIndexParser`](x-source-tag://BrewIndexParser):
-/// brew's JWS-format `formula.jws.json`, brew's JWS-format
-/// `cask.jws.json`, or a `{"formulae":[…], "casks":[…]}` envelope as
-/// emitted by `brew info --json=v2` and used by the Steading-owned
-/// tap-cache file.
+/// brew's JWS-format internal index
+/// (`~/Library/Caches/Homebrew/api/internal/packages.<tag>.jws.json`),
+/// or a `{"formulae":[…], "casks":[…]}` envelope as emitted by
+/// `brew info --json=v2` and used by the Steading-owned tap-cache file.
 struct BrewIndexEntry: Sendable, Hashable {
     enum Kind: String, Sendable, Hashable {
         case formula
@@ -33,16 +33,23 @@ struct BrewIndexEntry: Sendable, Hashable {
     let kind: Kind
 }
 
-/// Pure parser for brew's package-index JSON. Three entry points cover
-/// the three on-disk shapes Steading consumes:
+/// Pure parser for brew's package-index JSON. Two entry points cover
+/// the two on-disk shapes Steading consumes:
 ///
-/// - `parseJWSFormulae(_:)` — `~/Library/Caches/Homebrew/api/formula.jws.json`
-/// - `parseJWSCasks(_:)`    — `~/Library/Caches/Homebrew/api/cask.jws.json`
+/// - `parsePackagesIndex(_:)` — brew 6's consolidated internal index
+///   `~/Library/Caches/Homebrew/api/internal/packages.<tag>.jws.json`
 /// - `parseInfoEnvelope(_:)` — `brew info --json=v2` output and the
 ///   Steading-owned tap-cache file
 ///
 /// The JWS envelope's `payload` field is itself a JSON-encoded *string*
-/// (not a nested object) — decoding it is a two-step unwrap.
+/// (not a nested object) — decoding it is a two-step unwrap. In brew
+/// 6's internal index the decoded payload is an *object* whose
+/// `formulae` / `casks` members are dictionaries keyed by the package
+/// name/token; the key is the identifier (entries carry no `name` of
+/// their own), the tap is implicit (`homebrew/core` for formulae) or
+/// carried as `tap_string` (casks). The index covers
+/// `homebrew/core` + `homebrew/cask` only — third-party taps reach the
+/// universe through `parseInfoEnvelope` and the Steading tap-cache.
 enum BrewIndexParser {
 
     enum ParseError: Error, Equatable {
@@ -86,16 +93,54 @@ enum BrewIndexParser {
         }
     }
 
-    static func parseJWSFormulae(_ data: Data) throws -> [BrewIndexEntry] {
-        let payload = try unwrapJWSPayload(data)
-        let dtos = try JSONDecoder().decode([FormulaDTO].self, from: payload)
-        return dtos.map(toEntry(_:))
+    /// brew 6 internal-index payload: `formulae` / `casks` are objects
+    /// keyed by the package identifier. Only the fields the universe
+    /// keys on are decoded; the per-entry payload carries no name/tap,
+    /// so the dictionary key supplies the token.
+    private struct PackagesIndex: Decodable {
+        let formulae: [String: PackageEntryDTO]
+        let casks: [String: CaskEntryDTO]
     }
 
-    static func parseJWSCasks(_ data: Data) throws -> [BrewIndexEntry] {
+    private struct PackageEntryDTO: Decodable {
+        let desc: String?
+    }
+
+    private struct CaskEntryDTO: Decodable {
+        let desc: String?
+        let tapString: String?
+
+        enum CodingKeys: String, CodingKey {
+            case desc
+            case tapString = "tap_string"
+        }
+    }
+
+    /// Parse brew 6's consolidated internal index. The key of each
+    /// `formulae` / `casks` entry is the token; formulae are
+    /// `homebrew/core`, casks default to `homebrew/cask` unless the
+    /// entry's `tap_string` says otherwise. `fullToken` equals the
+    /// token (the index is core-only). Entries are sorted — formulae
+    /// then casks, each by token — so dict-decode order doesn't leak
+    /// into the universe.
+    static func parsePackagesIndex(_ data: Data) throws -> [BrewIndexEntry] {
         let payload = try unwrapJWSPayload(data)
-        let dtos = try JSONDecoder().decode([CaskDTO].self, from: payload)
-        return dtos.map(toEntry(_:))
+        let index = try JSONDecoder().decode(PackagesIndex.self, from: payload)
+        let formulae = index.formulae
+            .sorted { $0.key < $1.key }
+            .map { token, dto in
+                BrewIndexEntry(token: token, fullToken: token,
+                               tap: "homebrew/core", desc: dto.desc,
+                               kind: .formula)
+            }
+        let casks = index.casks
+            .sorted { $0.key < $1.key }
+            .map { token, dto in
+                BrewIndexEntry(token: token, fullToken: token,
+                               tap: dto.tapString ?? "homebrew/cask",
+                               desc: dto.desc, kind: .cask)
+            }
+        return formulae + casks
     }
 
     static func parseInfoEnvelope(_ data: Data) throws -> [BrewIndexEntry] {

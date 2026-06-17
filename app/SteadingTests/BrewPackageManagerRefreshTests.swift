@@ -3,8 +3,8 @@ import Foundation
 @testable import Steading
 
 /// Index-loader tests for `BrewPackageManager.refresh`. The loader
-/// pulls from five sources — JWS formula cache, JWS cask cache,
-/// Steading tap-cache, brew list (formulae / casks / pinned), and
+/// pulls from four sources — brew 6's consolidated internal index,
+/// the Steading tap-cache, brew list (formulae / casks / pinned), and
 /// brew tap-info — and composes them into rows with
 /// installed/outdated/pinned status. These tests inject canned
 /// bytes for each source through the manager's DI seams and assert
@@ -47,7 +47,7 @@ struct BrewPackageManagerRefreshTests {
         }
     }
 
-    @Test("refresh: composes installed/outdated/pinned status across all five sources")
+    @Test("refresh: composes installed/outdated/pinned status across all four sources")
     func refresh_composesAllSources() async throws {
         let runner = ScriptedRunner()
         runner.respond(to: ["list", "--formula", "-1"], stdout: "git\njq\nneovim\n")
@@ -57,32 +57,29 @@ struct BrewPackageManagerRefreshTests {
             [{"name":"cirruslabs/cli","formula_names":["cirruslabs/cli/tart"],"cask_tokens":[]}]
             """)
 
-        let formulaJWSPayload = #"""
-        [
-          {"name":"git","full_name":"git","tap":"homebrew/core","desc":"Distributed revision control system"},
-          {"name":"jq","full_name":"jq","tap":"homebrew/core","desc":"JSON processor"},
-          {"name":"neovim","full_name":"neovim","tap":"homebrew/core","desc":"Editor"}
-        ]
-        """#
-        let caskJWSPayload = #"""
-        [
-          {"token":"firefox","full_token":"firefox","tap":"homebrew/cask","desc":"Browser"}
-        ]
+        let packagesPayload = #"""
+        {
+          "formulae": {
+            "git": {"desc":"Distributed revision control system"},
+            "jq": {"desc":"JSON processor"},
+            "neovim": {"desc":"Editor"}
+          },
+          "casks": {
+            "firefox": {"desc":"Browser","tap_string":"homebrew/cask"}
+          }
+        }
         """#
         let tapIndexPayload = #"""
         {"formulae":[{"name":"tart","full_name":"cirruslabs/cli/tart","tap":"cirruslabs/cli","desc":"VMs"}],"casks":[]}
         """#
 
-        let formulaURL = URL(fileURLWithPath: "/tmp/test-formula.jws.json")
-        let caskURL = URL(fileURLWithPath: "/tmp/test-cask.jws.json")
+        let packagesURL = URL(fileURLWithPath: "/tmp/test-packages.jws.json")
         let tapURL = URL(fileURLWithPath: "/tmp/test-tap-index.json")
 
         let reader: BrewPackageManager.DataReader = { url in
             switch url {
-            case formulaURL:
-                return jwsEnvelope(payload: formulaJWSPayload)
-            case caskURL:
-                return jwsEnvelope(payload: caskJWSPayload)
+            case packagesURL:
+                return jwsEnvelope(payload: packagesPayload)
             case tapURL:
                 return tapIndexPayload.data(using: .utf8)!
             default:
@@ -92,12 +89,7 @@ struct BrewPackageManagerRefreshTests {
 
         let manager = BrewPackageManager(
             runner: runner.runner(),
-            jwsCachePathResolver: { kind in
-                switch kind {
-                case .formula: return formulaURL
-                case .cask:    return caskURL
-                }
-            },
+            packagesIndexPathResolver: { packagesURL },
             tapIndexCachePathResolver: { tapURL },
             dataReader: reader
         )
@@ -110,7 +102,7 @@ struct BrewPackageManagerRefreshTests {
         manager.refresh(outdated: outdated)
         await waitFor { manager.state == .idle && !manager.rows.isEmpty }
 
-        // Universe = JWS formulae (3) + JWS casks (1) + tap-index entries (1) = 5
+        // Universe = packages-index formulae (3) + casks (1) + tap-index entries (1) = 5
         #expect(manager.rows.count == 5)
 
         // git: installed (in formula list) + pinned (in pinned list) + not outdated
@@ -150,7 +142,7 @@ struct BrewPackageManagerRefreshTests {
         let runner = ScriptedRunner()
         let manager = BrewPackageManager(
             runner: runner.runner(),
-            jwsCachePathResolver: { _ in nil },
+            packagesIndexPathResolver: { nil },
             tapIndexCachePathResolver: { nil },
             dataReader: { _ in throw CocoaError(.fileNoSuchFile) }
         )
@@ -181,20 +173,20 @@ struct BrewPackageManagerRefreshTests {
             return .ran(exitCode: 0, stdout: Data(), stderr: Data())
         }
 
-        // A single-entry universe — git from the JWS formula cache.
+        // A single-entry universe — git from the packages index.
         // The first refresh sees outdated = []; the second sees
         // outdated = [git@…]. Only the second's isOutdated should
         // land in `rows`.
-        let formulaPayload = #"""
-        [{"name":"git","full_name":"git","tap":"homebrew/core","desc":"VCS"}]
+        let packagesPayload = #"""
+        {"formulae":{"git":{"desc":"VCS"}},"casks":{}}
         """#
-        let jwsURL = URL(fileURLWithPath: "/tmp/test-jws-\(UUID().uuidString).json")
+        let packagesURL = URL(fileURLWithPath: "/tmp/test-packages-\(UUID().uuidString).json")
         let reader: BrewPackageManager.DataReader = { _ in
-            jwsEnvelopeData(payload: formulaPayload)
+            jwsEnvelopeData(payload: packagesPayload)
         }
         let manager = BrewPackageManager(
             runner: runner,
-            jwsCachePathResolver: { kind in kind == .formula ? jwsURL : nil },
+            packagesIndexPathResolver: { packagesURL },
             tapIndexCachePathResolver: { nil },
             dataReader: reader
         )
