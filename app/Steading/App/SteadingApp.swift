@@ -19,10 +19,12 @@ struct SteadingApp: App {
     var body: some Scene {
         Window("Steading", id: "main") {
             Group {
-                if appState.isReady {
-                    ContentView()
-                } else {
+                if !appState.isReady {
                     OnboardingView()
+                } else if !appState.definitionRegistry.pendingApprovals.isEmpty {
+                    ServiceDefinitionApprovalSheet()
+                } else {
+                    ContentView()
                 }
             }
             .environment(appState)
@@ -47,6 +49,14 @@ struct SteadingApp: App {
                 // window's own `.task(id:)` reload finds rows already warm
                 // and overlays its spinner instead of blanking.
                 brewPackages.refresh(outdated: brewUpdates.outdated)
+                if appState.isReady {
+                    await appState.loadDefinitionRegistry()
+                }
+            }
+            .task(id: appState.isReady) {
+                if appState.isReady {
+                    await appState.loadDefinitionRegistry()
+                }
             }
             .frame(minWidth: 860, minHeight: 560)
         }

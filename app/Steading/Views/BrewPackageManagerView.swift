@@ -19,6 +19,11 @@ struct BrewPackageManagerView: View {
     @State private var detailsShown: Bool = false
     @State private var closeWarning: CloseReason?
     @State private var passwordInput = ""
+    /// Opt-in password caching, off by default. When on, `cacheDuration`
+    /// is offered and passed to `AskpassService` so subsequent sudo
+    /// prompts in the window are answered from RAM until it expires.
+    @State private var rememberPassword = false
+    @State private var cacheDuration: AskpassService.CacheDuration = .fiveMinutes
     @State private var newTapText = ""
     @State private var selectedRowID: String?
     @State private var sortOrder: [KeyPathComparator<BrewPackageManager.PackageRow>] = [
@@ -30,6 +35,10 @@ struct BrewPackageManagerView: View {
     /// typing.
     @State private var typedSearch: String = ""
     @State private var searchDebounce: Task<Void, Never>?
+
+    /// Stable identity for the invisible element at the end of the
+    /// Apply-log scroll view; scrolling to it follows the streaming tail.
+    private let logTailAnchor = "apply-log-tail"
 
     enum CloseReason: Identifiable {
         case closeWindow
@@ -57,6 +66,19 @@ struct BrewPackageManagerView: View {
             .task(id: brewUpdates.outdated) {
                 packages.refresh(outdated: brewUpdates.outdated)
             }
+            // An Apply changes what's installed / pinned / upgradable, so
+            // the index is stale the moment it finishes. `recentApplyOutcome`
+            // flips from nil to a terminal outcome on completion (any
+            // outcome — a partial failure or cancel still mutated state).
+            // Re-run `brew outdated` so the upgradable set is fresh — that
+            // re-fires the `.task(id:)` above if it changed — and recompose
+            // rows immediately so a plain install or removal (which leaves
+            // `outdated` unchanged) still reflects the new installed set.
+            .onChange(of: packages.recentApplyOutcome) { _, outcome in
+                guard outcome != nil else { return }
+                brewUpdates.check()
+                packages.refresh(outdated: brewUpdates.outdated)
+            }
             .modifier(WindowChromeModifier(
                 packages: packages,
                 askpass: askpass,
@@ -66,6 +88,14 @@ struct BrewPackageManagerView: View {
             ))
             .onReceive(NotificationCenter.default.publisher(for: .steadingAppQuitDuringApply)) { _ in
                 closeWarning = .quitApp
+            }
+            .alert("Security warning", isPresented: Binding(
+                get: { askpass.securityWarning != nil },
+                set: { if !$0 { askpass.securityWarning = nil } }
+            )) {
+                Button("OK", role: .cancel) { askpass.securityWarning = nil }
+            } message: {
+                Text(askpass.securityWarning ?? "")
             }
     }
 
@@ -465,19 +495,34 @@ struct BrewPackageManagerView: View {
             }
 
             DisclosureGroup(isExpanded: $detailsShown) {
-                ScrollView {
-                    Text(packages.applyLog.isEmpty ? "(no output yet)" : packages.applyLog)
-                        .font(.system(.caption, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(6)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(packages.applyLog.isEmpty ? "(no output yet)" : packages.applyLog)
+                                .font(.system(.caption, design: .monospaced))
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(6)
+                            // Tail anchor: scrolling to it follows the
+                            // newest output as the log streams in.
+                            Color.clear
+                                .frame(height: 1)
+                                .id(logTailAnchor)
+                        }
+                    }
+                    .frame(height: 180)
+                    .background(Color(NSColor.textBackgroundColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.secondary.opacity(0.3))
+                    )
+                    .onChange(of: packages.applyLog) { _, _ in
+                        proxy.scrollTo(logTailAnchor, anchor: .bottom)
+                    }
+                    .onChange(of: detailsShown) { _, shown in
+                        if shown { proxy.scrollTo(logTailAnchor, anchor: .bottom) }
+                    }
                 }
-                .frame(height: 180)
-                .background(Color(NSColor.textBackgroundColor))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.secondary.opacity(0.3))
-                )
             } label: {
                 Text(detailsShown ? "Hide details" : "Show details")
                     .font(.caption)
@@ -519,7 +564,8 @@ struct BrewPackageManagerView: View {
     private func submitPassword() {
         let value = passwordInput
         passwordInput = ""
-        askpass.respond(password: value)
+        askpass.respond(password: value,
+                        cache: rememberPassword ? cacheDuration : nil)
     }
 
     private func cancelPassword() {
@@ -532,21 +578,45 @@ struct BrewPackageManagerView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Administrator password required")
                 .font(.headline)
-            Text("brew is asking for an administrator password to finish the current sub-call. Your password is used once and not stored.")
+            Text("brew is asking for an administrator password to finish the current sub-call. By default your password isn't stored — enable Remember to keep it in memory for the chosen duration.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
+            if askpass.lastValidationFailed {
+                Text("That password was incorrect. Try again.")
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
+
             SecureField("Password", text: $passwordInput)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit { submitPassword() }
+                .disabled(askpass.isValidating)
+
+            Toggle("Remember password", isOn: $rememberPassword)
+                .disabled(askpass.isValidating)
+            if rememberPassword {
+                Picker("For", selection: $cacheDuration) {
+                    ForEach(AskpassService.CacheDuration.allCases) { duration in
+                        Text(duration.label).tag(duration)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(askpass.isValidating)
+            }
 
             HStack {
+                if askpass.isValidating {
+                    ProgressView().controlSize(.small)
+                    Text("Validating…").font(.callout).foregroundStyle(.secondary)
+                }
                 Spacer()
                 Button("Cancel", role: .cancel) { cancelPassword() }
+                    .disabled(askpass.isValidating)
                 Button("Continue") { submitPassword() }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(passwordInput.isEmpty)
+                    .disabled(passwordInput.isEmpty || askpass.isValidating)
             }
         }
         .padding(20)

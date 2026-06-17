@@ -169,6 +169,23 @@ final class BrewPackageManager {
         return false
     }
 
+    /// The trailing slice of the Apply log to publish for display. A
+    /// big `brew upgrade` streams megabytes; rendering all of it in a
+    /// selectable monospaced `Text` re-lays-out the whole string on
+    /// every update and saturates the main thread, so we show only the
+    /// last `maxCharacters`, trimmed forward to the next newline so the
+    /// first visible line isn't chopped mid-token. Logs at or under the
+    /// cap are returned unchanged.
+    nonisolated static func displayTail(_ log: String, maxCharacters: Int = 16_000) -> String {
+        guard log.count > maxCharacters else { return log }
+        let start = log.index(log.endIndex, offsetBy: -maxCharacters)
+        let tail = log[start...]
+        if let newline = tail.firstIndex(of: "\n") {
+            return String(tail[tail.index(after: newline)...])
+        }
+        return String(tail)
+    }
+
     // MARK: - Observable state
 
     /// Manager-level state. `idle` is the resting state once the
@@ -203,8 +220,24 @@ final class BrewPackageManager {
     private(set) var marked: Set<String> = []
 
     /// Streaming output from the in-flight Apply, UTF-8 decoded in
-    /// arrival order. Reset at the start of each Apply.
+    /// arrival order — the *displayed* slice: a bounded tail published
+    /// at a throttled rate (see `appendApplyOutput`). The view renders
+    /// this as one selectable monospaced `Text`, so it must stay small
+    /// and change infrequently or SwiftUI re-lays-out the whole string
+    /// on every brew chunk and pins the main thread. Reset at the start
+    /// of each Apply.
     private(set) var applyLog: String = ""
+
+    /// Full accumulated Apply output, not observed — brew emits a
+    /// torrent of small chunks (and `\r` progress redraws) and we must
+    /// not invalidate the view on each one. `appendApplyOutput` buffers
+    /// here and flushes a bounded tail into `applyLog` on a ~10 Hz
+    /// timer, collapsing hundreds of per-chunk renders into a handful.
+    @ObservationIgnored private var applyLogBuffer: String = ""
+
+    /// True while a coalesced flush of `applyLogBuffer` → `applyLog` is
+    /// already pending, so a burst of chunks schedules exactly one.
+    @ObservationIgnored private var applyLogFlushScheduled = false
 
     /// Outcome of the most recent Apply. `nil` until the first Apply
     /// completes; cleared at the start of each fresh Apply.
@@ -526,6 +559,8 @@ final class BrewPackageManager {
         if argv.isEmpty { return }
 
         applyLog = ""
+        applyLogBuffer = ""
+        applyLogFlushScheduled = false
         recentApplyOutcome = nil
         pendingAutoremoveConfirmation = false
         state = .applying
@@ -604,7 +639,7 @@ final class BrewPackageManager {
         for await event in handle.events {
             switch event {
             case .output(let piece):
-                applyLog += piece
+                appendApplyOutput(piece)
             case .finished(let o):
                 outcome = o
             }
@@ -621,8 +656,31 @@ final class BrewPackageManager {
     private func finishApply(outcome: ApplyOutcome) {
         applyTask = nil
         inflightHandle = nil
+        flushApplyLog()
         recentApplyOutcome = outcome
         state = .idle
+    }
+
+    /// Buffer one piece of brew output and ensure a single coalesced
+    /// flush is pending. Appending to the non-observed buffer doesn't
+    /// touch the view; the flush publishes a bounded tail at ~10 Hz.
+    private func appendApplyOutput(_ piece: String) {
+        applyLogBuffer += piece
+        guard !applyLogFlushScheduled else { return }
+        applyLogFlushScheduled = true
+        Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(100))
+            self?.flushApplyLog()
+        }
+    }
+
+    /// Publish the bounded tail of the buffer into the observed
+    /// `applyLog`. Called on the ~10 Hz timer and once eagerly from
+    /// `finishApply` so the final bytes land the moment Apply settles.
+    private func flushApplyLog() {
+        applyLogFlushScheduled = false
+        applyLogBuffer = Self.displayTail(applyLogBuffer)
+        applyLog = applyLogBuffer
     }
 
     // MARK: - Default runners

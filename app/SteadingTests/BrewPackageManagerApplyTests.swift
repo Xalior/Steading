@@ -269,6 +269,40 @@ struct BrewPackageManagerApplyTests {
         #expect(manager.recentApplyOutcome == .failed(exitCode: 5))
     }
 
+    // MARK: - Display-tail capping (pure)
+
+    @Test("displayTail: a log within the cap is returned unchanged")
+    func displayTail_underCap_unchanged() {
+        let log = "line 1\nline 2\nline 3\n"
+        #expect(BrewPackageManager.displayTail(log, maxCharacters: 16_000) == log)
+    }
+
+    @Test("displayTail: an over-cap log is trimmed to roughly the cap")
+    func displayTail_overCap_trimmed() {
+        let log = String(repeating: "x", count: 50_000)
+        let tail = BrewPackageManager.displayTail(log, maxCharacters: 16_000)
+        // No newline in the input, so the raw last-maxCharacters slice
+        // is returned — bounded, never the whole 50k.
+        #expect(tail.count == 16_000)
+    }
+
+    @Test("displayTail: trims forward to a newline so the first visible line isn't chopped")
+    func displayTail_trimsToLineBoundary() {
+        // 20 lines of 1000 chars each = 20k chars, over a 16k cap. The
+        // returned tail must start at a line boundary (no partial line).
+        let lines = (0..<20).map { "L\($0)-" + String(repeating: "y", count: 994) }
+        let log = lines.joined(separator: "\n") + "\n"
+        let tail = BrewPackageManager.displayTail(log, maxCharacters: 16_000)
+        #expect(tail.count <= 16_000)
+        // Every retained line is intact: it begins with the "L<n>-"
+        // marker, so no line was cut mid-way.
+        for line in tail.split(separator: "\n") {
+            #expect(line.hasPrefix("L"))
+        }
+        // The very last line is preserved.
+        #expect(tail.contains("L19-"))
+    }
+
     // MARK: - Cancel
 
     @Test("cancelApply: cancel during the autoremove pause finishes the pipeline cleanly")

@@ -47,6 +47,71 @@ struct AskpassServiceTests {
         #expect(service.pendingRequest == nil)
     }
 
+    // MARK: - Password-cache expiry (pure)
+
+    @Test("expiry: fixed durations add their timeout; untilQuit has no bound")
+    func cache_expiry_fromDuration() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        #expect(AskpassService.expiry(for: .oneMinute, from: now)
+                == now.addingTimeInterval(60))
+        #expect(AskpassService.expiry(for: .fiveMinutes, from: now)
+                == now.addingTimeInterval(300))
+        #expect(AskpassService.expiry(for: .fifteenMinutes, from: now)
+                == now.addingTimeInterval(900))
+        #expect(AskpassService.expiry(for: .untilQuit, from: now) == nil)
+    }
+
+    @Test("isCacheValid: within the window valid, at/after the instant expired")
+    func cache_isValid_timeBound() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let expiry = now.addingTimeInterval(300)
+        #expect(AskpassService.isCacheValid(expiry: expiry, now: now))
+        #expect(AskpassService.isCacheValid(expiry: expiry,
+                                            now: now.addingTimeInterval(299)))
+        // At the instant and beyond, the cache is no longer valid.
+        #expect(!AskpassService.isCacheValid(expiry: expiry, now: expiry))
+        #expect(!AskpassService.isCacheValid(expiry: expiry,
+                                             now: now.addingTimeInterval(301)))
+    }
+
+    @Test("isCacheValid: a nil expiry (untilQuit) never time-expires")
+    func cache_isValid_untilQuit() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        #expect(AskpassService.isCacheValid(expiry: nil, now: now))
+        #expect(AskpassService.isCacheValid(expiry: nil,
+                                            now: now.addingTimeInterval(86_400)))
+    }
+
+    // MARK: - Request classification (security routing)
+
+    @Test("classify: a fetch request is always a fetch, validation state irrelevant")
+    func classify_fetch() {
+        #expect(AskpassService.classify(line: SteadingAskpassWire.requestLine,
+                                        validationActive: false) == .fetch)
+        #expect(AskpassService.classify(line: SteadingAskpassWire.requestLine,
+                                        validationActive: true) == .fetch)
+    }
+
+    @Test("classify: a validate request is honoured only inside the validation window")
+    func classify_validate_inBand() {
+        #expect(AskpassService.classify(line: SteadingAskpassWire.validateRequestLine,
+                                        validationActive: true) == .validate)
+    }
+
+    @Test("classify: a validate request outside the window is flagged out-of-band, not honoured")
+    func classify_validate_outOfBand() {
+        #expect(AskpassService.classify(line: SteadingAskpassWire.validateRequestLine,
+                                        validationActive: false) == .outOfBandValidate)
+    }
+
+    @Test("classify: anything else is denied")
+    func classify_garbage_denied() {
+        #expect(AskpassService.classify(line: "STEADING-ASKPASS 1 nonsense",
+                                        validationActive: true) == .deny)
+        #expect(AskpassService.classify(line: nil, validationActive: false) == .deny)
+        #expect(AskpassService.classify(line: "", validationActive: true) == .deny)
+    }
+
     // MARK: - Helpers
 
     private static func connectToService() throws -> Int32 {

@@ -26,22 +26,234 @@ final class AskpassService {
         let id: UUID
     }
 
+    /// How long an opt-in password cache survives. Default behaviour
+    /// (no caching) is the *absence* of a duration — the modal's
+    /// "Remember" checkbox is off, so `respond` is called with
+    /// `cache: nil` and nothing is retained.
+    enum CacheDuration: String, CaseIterable, Identifiable, Sendable {
+        case oneMinute
+        case fiveMinutes
+        case fifteenMinutes
+        case untilQuit
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .oneMinute:      return "1 minute"
+            case .fiveMinutes:    return "5 minutes"
+            case .fifteenMinutes: return "15 minutes"
+            case .untilQuit:      return "Until app quits"
+            }
+        }
+
+        /// Seconds until expiry, or `nil` for `untilQuit` (no time
+        /// bound — the RAM cache simply dies when the process exits).
+        var timeout: TimeInterval? {
+            switch self {
+            case .oneMinute:      return 60
+            case .fiveMinutes:    return 5 * 60
+            case .fifteenMinutes: return 15 * 60
+            case .untilQuit:      return nil
+            }
+        }
+    }
+
     private(set) var pendingRequest: PendingRequest?
 
-    func respond(password: String?) {
-        let ch = pendingChannel
-        pendingChannel = nil
-        pendingRequest = nil
-        guard let ch else { return }
-        if let password {
-            ch.sendPassword(password)
-        } else {
-            ch.sendCancel()
+    /// True while a candidate password is being validated by the
+    /// throwaway `sudo -k -v`. The modal shows a spinner and disables
+    /// its controls while this is set.
+    private(set) var isValidating = false
+
+    /// Set when the most recent validation rejected the password, so
+    /// the re-presented modal can tell the user it was incorrect.
+    /// Cleared on the next submit.
+    private(set) var lastValidationFailed = false
+
+    /// Non-nil when a security anomaly should be surfaced to the user —
+    /// currently, a `validate` request arriving outside the validation
+    /// window. The view presents it as an alert and clears it.
+    var securityWarning: String?
+
+    private let askpassHelperResolver: @Sendable () -> String?
+
+    init(askpassHelperResolver: @escaping @Sendable () -> String?
+         = BrewUpdateManager.defaultAskpassHelperResolver) {
+        self.askpassHelperResolver = askpassHelperResolver
+    }
+
+    /// Respond to the pending request. With `cache == nil` (the
+    /// default) the password is sent once and nothing is retained.
+    /// With a `cache` duration the password is first validated by a
+    /// throwaway `sudo -k -v` — only a password that genuinely
+    /// authenticates is stored, so a typo can never poison the cache.
+    func respond(password: String?, cache: CacheDuration? = nil) {
+        lastValidationFailed = false
+        guard let password else {
+            let ch = pendingChannel
+            pendingChannel = nil
+            pendingRequest = nil
+            ch?.sendCancel()
+            ch?.close()
+            return
         }
-        ch.close()
+        guard let cache else {
+            // No caching: send once, retain nothing.
+            let ch = pendingChannel
+            pendingChannel = nil
+            pendingRequest = nil
+            ch?.sendPassword(password)
+            ch?.close()
+            return
+        }
+        // Caching requested: validate before storing. Keep the pending
+        // brew channel held until validation settles.
+        beginValidation(candidate: password, cache: cache)
     }
 
     func respondCancel() { respond(password: nil) }
+
+    /// Drop any cached password immediately (e.g. socket teardown).
+    func clearCache() {
+        cachedPassword = nil
+        cacheExpiry = nil
+    }
+
+    // MARK: - Password cache (opt-in, in-RAM, expiring)
+
+    /// The retained password, or nil when nothing is cached.
+    private var cachedPassword: String?
+    /// Absolute expiry instant; `nil` together with a non-nil
+    /// `cachedPassword` means "until app quits" (no time bound).
+    private var cacheExpiry: Date?
+
+    /// The cached password if one is present and still valid at `Date()`;
+    /// expired entries are cleared as a side effect and return nil.
+    private func validCachedPassword() -> String? {
+        guard let password = cachedPassword else { return nil }
+        guard Self.isCacheValid(expiry: cacheExpiry, now: Date()) else {
+            clearCache()
+            return nil
+        }
+        return password
+    }
+
+    /// Absolute expiry for a freshly-stored cache entry. `untilQuit`
+    /// has no time bound, so it stores `nil`. Pure — exposed for tests.
+    nonisolated static func expiry(for duration: CacheDuration, from now: Date) -> Date? {
+        guard let timeout = duration.timeout else { return nil }
+        return now.addingTimeInterval(timeout)
+    }
+
+    /// Whether a cache entry stored with `expiry` is still valid at
+    /// `now`. A nil `expiry` (the `untilQuit` policy) never time-expires.
+    /// Pure — exposed for tests.
+    nonisolated static func isCacheValid(expiry: Date?, now: Date) -> Bool {
+        guard let expiry else { return true }
+        return now < expiry
+    }
+
+    // MARK: - Pre-cache validation
+
+    /// What an incoming request line means, given whether validation is
+    /// in progress. Pure — exposed for tests; centralises the security
+    /// rule that a `validate` request is legitimate *only* during the
+    /// validation window.
+    enum RequestAction: Equatable {
+        case fetch
+        case validate
+        case outOfBandValidate
+        case deny
+    }
+
+    nonisolated static func classify(line: String?, validationActive: Bool) -> RequestAction {
+        switch line {
+        case SteadingAskpassWire.requestLine:
+            return .fetch
+        case SteadingAskpassWire.validateRequestLine:
+            return validationActive ? .validate : .outOfBandValidate
+        default:
+            return .deny
+        }
+    }
+
+    /// The candidate password under validation and the cache policy to
+    /// apply if it authenticates. Non-nil only inside the window.
+    private var validationCandidate: String?
+    private var pendingValidationCache: CacheDuration?
+
+    private var validationActive: Bool { validationCandidate != nil }
+
+    /// Spawn the throwaway `/usr/bin/sudo -k -v` that authenticates the
+    /// candidate via the askpass helper (over the socket — never argv),
+    /// then store the cache and release the brew request on success, or
+    /// re-present the modal on failure.
+    private func beginValidation(candidate: String, cache: CacheDuration) {
+        validationCandidate = candidate
+        pendingValidationCache = cache
+        isValidating = true
+
+        Task { [weak self] in
+            let ok = await self?.runValidationSudo() ?? false
+            self?.finishValidation(success: ok)
+        }
+    }
+
+    private func runValidationSudo() async -> Bool {
+        guard let helper = askpassHelperResolver() else { return false }
+        var env = ProcessInfo.processInfo.environment
+        env["SUDO_ASKPASS"] = helper
+        env[SteadingAskpassWire.validationEnvVar] = "1"
+        // Full path for security: never resolve `sudo` via PATH.
+        // -k ignores any cached timestamp so the candidate is actually
+        // authenticated; -v validates without running a command; -A
+        // routes the prompt through our helper.
+        let handle = StreamingProcessRunner.run(
+            executable: "/usr/bin/sudo",
+            arguments: ["-A", "-k", "-v"],
+            environment: env
+        )
+        var exitCode: Int32?
+        for await event in handle.events {
+            if case .exited(let code) = event { exitCode = code }
+        }
+        return exitCode == 0
+    }
+
+    private func finishValidation(success: Bool) {
+        let candidate = validationCandidate
+        let cache = pendingValidationCache
+        validationCandidate = nil
+        pendingValidationCache = nil
+        isValidating = false
+
+        if success, let candidate, let cache {
+            cachedPassword = candidate
+            cacheExpiry = Self.expiry(for: cache, from: Date())
+            let ch = pendingChannel
+            pendingChannel = nil
+            pendingRequest = nil
+            ch?.sendPassword(candidate)
+            ch?.close()
+        } else {
+            // Rejected: keep the brew request pending and re-present the
+            // modal so the user can retry. Nothing is cached.
+            lastValidationFailed = true
+            if pendingChannel != nil {
+                pendingRequest = PendingRequest(id: UUID())
+            }
+        }
+    }
+
+    /// Surface an out-of-band `validate` request (one arriving while no
+    /// validation is in progress) to the user. Logged for audit and
+    /// published for the UI to alert on.
+    private func reportOutOfBandValidation() {
+        NSLog("AskpassService: SECURITY — validate request received outside the validation window; denied")
+        securityWarning = "Steading received a password-validation request when it wasn't validating a password. "
+            + "The request was denied. If you didn't trigger this, treat it as suspicious."
+    }
 
     func start() {
         guard listeningFD == -1 else { return }
@@ -125,6 +337,7 @@ final class AskpassService {
             listeningFD = -1
         }
         unlink(SteadingAskpassWire.socketPath())
+        clearCache()
     }
 
     // MARK: - Internals
@@ -134,18 +347,40 @@ final class AskpassService {
     private var pendingChannel: Channel?
 
     private func handleRequest(fd: Int32, line: String?) {
-        guard line == SteadingAskpassWire.requestLine else {
+        switch Self.classify(line: line, validationActive: validationActive) {
+        case .deny:
             Self.sendLine(fd: fd, SteadingAskpassWire.denyLine)
             close(fd)
-            return
+
+        case .validate:
+            // The throwaway validation sudo: answer with the candidate
+            // under test. Never touches the cache or the modal.
+            let channel = Channel(fd: fd)
+            channel.sendPassword(validationCandidate ?? "")
+            channel.close()
+
+        case .outOfBandValidate:
+            // A validate request with no validation in progress — anomalous.
+            Self.sendLine(fd: fd, SteadingAskpassWire.denyLine)
+            close(fd)
+            reportOutOfBandValidation()
+
+        case .fetch:
+            // Cache hit: answer from RAM without surfacing the modal.
+            if let cached = validCachedPassword() {
+                let channel = Channel(fd: fd)
+                channel.sendPassword(cached)
+                channel.close()
+                return
+            }
+            if let stale = pendingChannel {
+                stale.sendCancel()
+                stale.close()
+            }
+            let channel = Channel(fd: fd)
+            pendingChannel = channel
+            pendingRequest = PendingRequest(id: UUID())
         }
-        if let stale = pendingChannel {
-            stale.sendCancel()
-            stale.close()
-        }
-        let channel = Channel(fd: fd)
-        pendingChannel = channel
-        pendingRequest = PendingRequest(id: UUID())
     }
 
     // MARK: - Peer validation

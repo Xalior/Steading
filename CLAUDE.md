@@ -109,14 +109,10 @@ through another path.
 
 ## Collaboration style
 
-The user is senior, remote-first (browser-based Claude Code), and
-has explicit preferences:
+The user is senior and has explicit preferences:
 
 - **Tight cadence.** No speculation when you can verify. Use tools
   rather than guess. Don't engage in scope creep.
-- **Own corrections cleanly.** If the user corrects something, save
-  it as a durable rule (here, or in auto-memory) — don't apply it
-  once and forget.
 - **Short responses, no trailing summaries** unless asked for them.
 - **Ask precise questions.** One at a time when possible; batch
   only when the answers are clearly linked.
@@ -187,11 +183,6 @@ scripts/vm-down.sh steading-vanilla
 ## User's environment
 
 - Dev mac: macOS Tahoe 26.4, Xcode 26.3, Swift 6.2.4, Apple Silicon.
-- User connects remotely via Claude Code in a browser —
-  "almost like SSH" — so GUI clicks on the host require them to
-  Screen Share in. Prefer non-GUI-dependent verification; when a
-  GUI interaction is unavoidable, bundle clicks into a single
-  at-desk session rather than spreading them across the work.
 - Claude Code extension binary has Screen Recording, Accessibility,
   and Automation permissions granted — `screencapture`,
   `osascript` UI scripting, and `tell application "System Events"`

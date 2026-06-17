@@ -76,7 +76,14 @@ if SecCodeCheckValidity(secCode!, [], req) != errSecSuccess {
 
 // MARK: - Exchange
 
-let request = SteadingAskpassWire.requestLine + "\n"
+// In validation mode (set on the GUI's throwaway `sudo -k -v` spawn)
+// send the validate verb so the server knows to answer from the
+// candidate password it's checking rather than the cache / a modal.
+let isValidation = ProcessInfo.processInfo.environment[SteadingAskpassWire.validationEnvVar] == "1"
+let requestLine = isValidation
+    ? SteadingAskpassWire.validateRequestLine
+    : SteadingAskpassWire.requestLine
+let request = requestLine + "\n"
 request.withCString { p in _ = write(fd, p, strlen(p)) }
 
 // Read until we've consumed at least two lines (status + optional password).

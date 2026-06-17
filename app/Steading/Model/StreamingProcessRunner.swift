@@ -74,10 +74,18 @@ struct StreamingProcessRunner {
             process.terminationHandler = { proc in
                 outPipe.fileHandleForReading.readabilityHandler = nil
                 errPipe.fileHandleForReading.readabilityHandler = nil
-                // Close the read ends promptly. Draining with readToEnd()
-                // would block if the subprocess left orphaned descendants
-                // (a forked shell's child keeps the write end open until
-                // the child itself exits).
+                // A short-lived child can write its output and exit before
+                // the background readability source delivers it; the bytes
+                // sit in the pipe buffer. Sweep both pipes for anything the
+                // handlers hadn't drained yet so the tail of the output is
+                // never lost. The drain is non-blocking (readToEnd() would
+                // block if the subprocess left orphaned descendants — a
+                // forked shell's child keeps the write end open until it
+                // exits), so it delivers what's buffered and returns.
+                drainAvailable(outPipe.fileHandleForReading, channel: .stdout,
+                               into: continuation)
+                drainAvailable(errPipe.fileHandleForReading, channel: .stderr,
+                               into: continuation)
                 try? outPipe.fileHandleForReading.close()
                 try? errPipe.fileHandleForReading.close()
                 if controller.wasCancelled {
@@ -105,6 +113,30 @@ struct StreamingProcessRunner {
     }
 
     // MARK: - Internals
+
+    /// Read every byte currently buffered on `handle` and yield it,
+    /// without blocking. Used at termination to deliver output a
+    /// short-lived child wrote just before exiting. The fd is switched
+    /// to non-blocking so that if an orphaned descendant still holds
+    /// the write end open, `read` returns `EAGAIN` (≤ 0) and we stop
+    /// rather than hang waiting for an EOF that won't come.
+    private static func drainAvailable(_ handle: FileHandle,
+                                       channel: OutputChannel,
+                                       into continuation: AsyncStream<Event>.Continuation) {
+        let fd = handle.fileDescriptor
+        guard fd >= 0 else { return }
+        let flags = fcntl(fd, F_GETFL)
+        if flags != -1 { _ = fcntl(fd, F_SETFL, flags | O_NONBLOCK) }
+        var buffer = [UInt8](repeating: 0, count: 65_536)
+        while true {
+            let n = buffer.withUnsafeMutableBytes { read(fd, $0.baseAddress, $0.count) }
+            if n > 0 {
+                continuation.yield(.output(channel, Data(buffer[0..<n])))
+            } else {
+                break
+            }
+        }
+    }
 
     /// Shared cancellation state. A lock guards the mutable fields so
     /// `cancel()` from any thread is safe. The SIGKILL escalation runs

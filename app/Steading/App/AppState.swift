@@ -37,10 +37,59 @@ final class AppState {
     var registrationError: String?
     var selection: CatalogItem.ID?
 
+    /// Merged set of bundle + external service definitions, with
+    /// approval status. Driven by `loadDefinitionRegistry()` once
+    /// the helper is reachable.
+    let definitionRegistry = DefinitionRegistry()
+
     private let detector: BrewDetector
 
     init(detector: BrewDetector = BrewDetector()) {
         self.detector = detector
+    }
+
+    // MARK: - Definition registry
+
+    /// Scan the bundle's ServiceDefinitions/ directory and the user's
+    /// external data dir, decode each YAML, fetch the helper's
+    /// current approvals plist, and merge into the registry. Pending
+    /// approvals (records flagged `needsApproval`) gate the
+    /// transition to `ContentView`.
+    func loadDefinitionRegistry() async {
+        let bundleDir = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/Resources/ServiceDefinitions")
+        let bundleHashList = bundleDir.appendingPathComponent(".bundle-hashes.plist")
+        let externalDir = FileManager.default.urls(for: .applicationSupportDirectory,
+                                                   in: .userDomainMask).first?
+            .appendingPathComponent("Steading/ServiceDefinitions")
+            ?? URL(fileURLWithPath: NSHomeDirectory())
+                .appendingPathComponent("Library/Application Support/Steading/ServiceDefinitions")
+        let approvals = (try? await PrivHelperClient.shared.listApprovals()) ?? [:]
+        definitionRegistry.loadAll(
+            bundleDirectory: bundleDir,
+            bundleHashListURL: bundleHashList,
+            externalDirectory: externalDir,
+            currentApprovals: approvals
+        )
+    }
+
+    /// Run the consent challenge for `record`, persist via the
+    /// helper, and mark the registry record approved on success.
+    func approve(record: DefinitionRecord) async throws {
+        try AdminAuthorization.challenge(
+            prompt: "Steading needs your approval to load \(record.serviceID).yml from \(record.yamlPath)."
+        )
+        try await PrivHelperClient.shared.recordApproval(
+            yamlPath: record.yamlPath,
+            hash: record.hash
+        )
+        definitionRegistry.markApproved(yamlPath: record.yamlPath)
+    }
+
+    /// Drop the record from the registry without persisting any
+    /// approval. The YAML's service won't appear in the picker.
+    func deny(record: DefinitionRecord) {
+        definitionRegistry.remove(yamlPath: record.yamlPath)
     }
 
     // MARK: - Brew
