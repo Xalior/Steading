@@ -70,5 +70,15 @@ fallback to `formula.jws.json` / `cask.jws.json`.
 
 - Branch cut from `main`. Diagnosed root cause (brew auto-updated to
   6.0.2 today; old cache files gone).
+- Parser + resolver + tests migrated; full suite green, live test
+  parses the real 15 MB internal index in ~0.2s. Committed + pushed.
+- Startup preload: the first parse is multi-second, so the universe is
+  now warmed in the app's launch `.task`
+  (`brewPackages.refresh(outdated:)`). `brewPackages` outlives every
+  window, and the table renders `rows` under a `.loading` overlay
+  rather than blanking, so the Brew Package Manager window opens warm
+  and the existing on-open `.task(id:)` reload is a non-blocking
+  refresh. Only the one preload line was staged from `SteadingApp.swift`
+  — the in-flight service-definition edits in that file stay uncommitted.
 </content>
 </invoke>

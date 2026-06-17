@@ -39,6 +39,14 @@ struct SteadingApp: App {
                 appDelegate.isApplyInFlight = { brewPackages.state == .applying }
                 askpassService.start()
                 brewUpdates.start()
+                // Warm the package universe at launch so the multi-second
+                // internal-index parse is done before the Brew Package
+                // Manager window is ever opened. `refresh` is fire-and-
+                // forget (parse runs detached off the main actor) and
+                // `brewPackages` outlives every window open/close, so the
+                // window's own `.task(id:)` reload finds rows already warm
+                // and overlays its spinner instead of blanking.
+                brewPackages.refresh(outdated: brewUpdates.outdated)
             }
             .frame(minWidth: 860, minHeight: 560)
         }
