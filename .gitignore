@@ -10,6 +10,11 @@ tart/*
 # paths (TART_HOME, etc.) that vary between developers — never commit.
 .env
 
+# sourcekit-lsp build-server config (xcode-build-server). Holds
+# absolute paths (DerivedData build_root, workspace path) that vary
+# per machine — regenerate with `xcode-build-server config`, don't commit.
+buildServer.json
+
 # macOS
 .DS_Store
 
