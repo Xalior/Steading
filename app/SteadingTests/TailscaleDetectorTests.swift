@@ -125,11 +125,4 @@ struct TailscaleDetectorTests {
         ).detect()
         #expect(appStore == .guiVariantPresent(.appStore, appPath: base.path))
     }
-
-    // MARK: - Install argv — pure.
-
-    @Test("installArgv: installs the open-source formula")
-    func installArgv() {
-        #expect(TailscaleInstaller.installArgv() == ["install", "tailscale"])
-    }
 }

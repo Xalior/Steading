@@ -248,8 +248,19 @@ final class BrewPackageManager {
     /// is true; pressing Yes/No calls `confirmAutoremove(_:)`.
     private(set) var pendingAutoremoveConfirmation: Bool = false
 
+    /// Window scene id that launched the in-flight (or just-finished)
+    /// job. The shared apply modal is presented only from this window,
+    /// so two windows never fight to show the same dialog. `nil` once
+    /// no job is active and any result has been dismissed.
+    private(set) var ownerWindowID: String?
+
     /// Installed taps in display order, refreshed alongside the index.
     private(set) var taps: [BrewTapInfo] = []
+
+    /// Window scene ids that can own a brew job, so triggers and the
+    /// presentation gates agree on the same constants.
+    nonisolated static let mainWindowID = "main"
+    nonisolated static let packageManagerWindowID = "brew-package-manager"
 
     // MARK: - DI seams
 
@@ -552,12 +563,30 @@ final class BrewPackageManager {
     /// and pipeline completion. The pipeline is a no-op if no marks
     /// imply a sub-call (e.g. all marked rows currently produce empty
     /// argv tails — possible only at the empty-mark boundary).
-    func apply() {
+    func apply(owner: String = BrewPackageManager.packageManagerWindowID) {
+        startApply(argv: Self.applyArgv(for: markedRows), owner: owner)
+    }
+
+    /// Install one or more formulae/casks by token. Convenience over
+    /// `startApply` for triggers outside the package window — the
+    /// Tailscale pane, future per-service installs — so they funnel
+    /// through the same engine and the same shared "Applying…" modal.
+    func install(_ tokens: [String], owner: String) {
+        startApply(
+            argv: ApplyArgv(upgrades: [], installs: tokens, removes: []),
+            owner: owner
+        )
+    }
+
+    /// Start a brew Apply for an explicit argv, owned by `owner`. No-op
+    /// if one is already in flight or the argv is empty. This is the
+    /// single entry point every user-triggered brew mutation flows
+    /// through; `apply()` and `install(_:owner:)` are thin callers.
+    func startApply(argv: ApplyArgv, owner: String) {
         guard applyTask == nil else { return }
-        let rows = markedRows
-        let argv = Self.applyArgv(for: rows)
         if argv.isEmpty { return }
 
+        ownerWindowID = owner
         applyLog = ""
         applyLogBuffer = ""
         applyLogFlushScheduled = false
@@ -568,6 +597,15 @@ final class BrewPackageManager {
         applyTask = Task { [weak self] in
             await self?.runApplyPipeline(argv: argv)
         }
+    }
+
+    /// Dismiss a finished Apply: clears the outcome and the owning
+    /// window so the shared modal closes. No-op while still applying —
+    /// the modal's Done button is gated on a terminal state.
+    func dismissResult() {
+        guard state != .applying else { return }
+        recentApplyOutcome = nil
+        ownerWindowID = nil
     }
 
     /// Cancel an in-flight Apply by sending the active sub-call its

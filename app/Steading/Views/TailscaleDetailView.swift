@@ -12,8 +12,7 @@ struct TailscaleDetailView: View {
     let item: CatalogItem
 
     @Environment(AppState.self) private var appState
-    @State private var installer = TailscaleInstaller()
-    @State private var logShown = false
+    @Environment(BrewPackageManager.self) private var packages
 
     var body: some View {
         ScrollView {
@@ -26,11 +25,11 @@ struct TailscaleDetailView: View {
             .frame(maxWidth: 720, alignment: .leading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .onChange(of: installer.state) { _, newState in
-            // Our own install is the one in-session change that makes
-            // Tailscale appear, so re-detect to flip the pane to the
-            // installed state.
-            if case .finished(success: true) = newState {
+        .onChange(of: packages.recentApplyOutcome) { _, outcome in
+            // Any completed brew job could have changed what's installed
+            // (our own Tailscale install, or a package-manager Apply that
+            // touched it), so re-detect to flip the pane's state.
+            if outcome != nil {
                 Task { await appState.refreshTailscaleStatus() }
             }
         }
@@ -181,68 +180,18 @@ struct TailscaleDetailView: View {
     private var installCard: some View {
         card {
             VStack(alignment: .leading, spacing: 12) {
+                // Routes through the shared brew engine; the unified
+                // BrewApplyView modal takes over with progress, output,
+                // and the outcome.
                 Button {
-                    installer.install()
+                    packages.install(["tailscale"], owner: BrewPackageManager.mainWindowID)
                 } label: {
                     Label("Install Tailscale (via Homebrew)", systemImage: "arrow.down.circle.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .controlSize(.large)
                 .buttonStyle(.borderedProminent)
-                .disabled(installer.state == .installing)
-
-                installProgress
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var installProgress: some View {
-        switch installer.state {
-        case .idle:
-            EmptyView()
-        case .installing:
-            HStack(spacing: 10) {
-                ProgressView().controlSize(.small)
-                Text("Installing the tailscale formula…")
-                    .foregroundStyle(.secondary)
-            }
-            outputDisclosure
-        case .finished(let success):
-            if success {
-                Label("Installed.", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-            } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Install failed.", systemImage: "xmark.circle.fill")
-                        .foregroundStyle(.red)
-                    Button("Try Again") { installer.install() }
-                }
-                outputDisclosure
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var outputDisclosure: some View {
-        if !installer.logTail.isEmpty {
-            DisclosureGroup(isExpanded: $logShown) {
-                ScrollView {
-                    Text(installer.logTail)
-                        .font(.system(.caption, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(6)
-                }
-                .frame(height: 160)
-                .background(Color(NSColor.textBackgroundColor))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.secondary.opacity(0.3))
-                )
-            } label: {
-                Text(logShown ? "Hide output" : "Show output")
-                    .font(.caption)
+                .disabled(packages.state == .applying)
             }
         }
     }

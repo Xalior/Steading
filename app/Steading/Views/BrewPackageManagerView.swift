@@ -5,26 +5,20 @@ import AppKit
 /// details) bound to `BrewPackageManager` for the package universe,
 /// marking, Apply pipeline, and pin/unpin verbs; reads from
 /// `BrewUpdateManager` for the upgradable subset and the Check Now
-/// invocation. The askpass sheet, the close-while-applying
-/// confirmation, the post-uninstall autoremove confirmation, and the
-/// streaming-output disclosure are all surfaced through the new
-/// manager's state.
+/// invocation. Apply hands off to the shared `BrewApplyView` modal,
+/// which owns the streaming output, the askpass prompt, the autoremove
+/// confirmation, and the quit-while-applying guard for every brew job.
 struct BrewPackageManagerView: View {
 
     @Environment(BrewUpdateManager.self) private var brewUpdates
     @Environment(BrewPackageManager.self) private var packages
-    @Environment(AskpassService.self) private var askpass
-    @Environment(\.dismissWindow) private var dismissWindow
 
-    @State private var detailsShown: Bool = false
-    @State private var closeWarning: CloseReason?
-    @State private var passwordInput = ""
-    /// Opt-in password caching, off by default. When on, `cacheDuration`
-    /// is offered and passed to `AskpassService` so subsequent sudo
-    /// prompts in the window are answered from RAM until it expires.
-    @State private var rememberPassword = false
-    @State private var cacheDuration: AskpassService.CacheDuration = .fiveMinutes
     @State private var newTapText = ""
+    /// The argv the user is being asked to confirm before Apply runs.
+    /// Non-nil while the plan confirmation is up; lets hidden marks
+    /// (e.g. a removal marked under a different filter) surface before
+    /// anything destructive runs.
+    @State private var applyPlan: BrewPackageManager.ApplyArgv?
     @State private var selectedRowID: String?
     @State private var sortOrder: [KeyPathComparator<BrewPackageManager.PackageRow>] = [
         KeyPathComparator(\.entry.token)
@@ -35,16 +29,6 @@ struct BrewPackageManagerView: View {
     /// typing.
     @State private var typedSearch: String = ""
     @State private var searchDebounce: Task<Void, Never>?
-
-    /// Stable identity for the invisible element at the end of the
-    /// Apply-log scroll view; scrolling to it follows the streaming tail.
-    private let logTailAnchor = "apply-log-tail"
-
-    enum CloseReason: Identifiable {
-        case closeWindow
-        case quitApp
-        var id: Int { self == .closeWindow ? 0 : 1 }
-    }
 
     var body: some View {
         @Bindable var packages = packages
@@ -79,24 +63,41 @@ struct BrewPackageManagerView: View {
                 brewUpdates.check()
                 packages.refresh(outdated: brewUpdates.outdated)
             }
-            .modifier(WindowChromeModifier(
-                packages: packages,
-                askpass: askpass,
-                dismissWindow: dismissWindow,
-                closeWarning: $closeWarning,
-                passwordModal: passwordModal
-            ))
-            .onReceive(NotificationCenter.default.publisher(for: .steadingAppQuitDuringApply)) { _ in
-                closeWarning = .quitApp
+            .confirmationDialog(
+                "Apply these changes?",
+                isPresented: Binding(
+                    get: { applyPlan != nil },
+                    set: { if !$0 { applyPlan = nil } }
+                ),
+                titleVisibility: .visible,
+                presenting: applyPlan
+            ) { plan in
+                Button("Apply") {
+                    packages.startApply(argv: plan,
+                                        owner: BrewPackageManager.packageManagerWindowID)
+                    applyPlan = nil
+                }
+                .keyboardShortcut(.defaultAction)
+                Button("Cancel", role: .cancel) { applyPlan = nil }
+            } message: { plan in
+                Text(Self.planSummary(plan))
             }
-            .alert("Security warning", isPresented: Binding(
-                get: { askpass.securityWarning != nil },
-                set: { if !$0 { askpass.securityWarning = nil } }
-            )) {
-                Button("OK", role: .cancel) { askpass.securityWarning = nil }
-            } message: {
-                Text(askpass.securityWarning ?? "")
-            }
+    }
+
+    /// Human-readable summary of a pending Apply, destructive verb
+    /// first. Pure — exposed for tests.
+    static func planSummary(_ argv: BrewPackageManager.ApplyArgv) -> String {
+        var lines: [String] = []
+        if !argv.removes.isEmpty {
+            lines.append("Remove: " + argv.removes.joined(separator: ", "))
+        }
+        if !argv.upgrades.isEmpty {
+            lines.append("Upgrade: " + argv.upgrades.joined(separator: ", "))
+        }
+        if !argv.installs.isEmpty {
+            lines.append("Install: " + argv.installs.joined(separator: ", "))
+        }
+        return lines.isEmpty ? "No changes to apply." : lines.joined(separator: "\n")
     }
 
     @ViewBuilder
@@ -112,20 +113,12 @@ struct BrewPackageManagerView: View {
 
             Divider()
 
-            // Centre column: the package table on top with the
-            // streaming-output progress area below it. Vertical
-            // split stays resizable so the user can grow the log
-            // area when an Apply is in flight.
-            VSplitView {
-                packageListPane(packages: packages.wrappedValue)
-                    .frame(minHeight: 220)
-
-                if shouldShowProgressArea {
-                    progressArea
-                        .frame(minHeight: 120)
-                }
-            }
-            .frame(minWidth: 380)
+            // Centre column: the package table. The streaming-output
+            // progress area is no longer inline here — every brew
+            // mutation now surfaces through the shared `BrewApplyView`
+            // modal (see `BrewPackageManager.startApply`).
+            packageListPane(packages: packages.wrappedValue)
+                .frame(minWidth: 380)
 
             Divider()
 
@@ -462,90 +455,14 @@ struct BrewPackageManagerView: View {
             .disabled(isChecking || !buttons.checkNowEnabled)
         }
         ToolbarItem {
-            if buttons.cancelEnabled {
-                Button("Cancel", role: .destructive) {
-                    packages.cancelApply()
-                    askpass.respondCancel()
-                }
-            } else {
-                Button("Apply") { packages.apply() }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!buttons.applyEnabled || isChecking)
+            // Apply first raises a plan confirmation; confirming there
+            // launches the job and the shared modal takes over with
+            // progress, Cancel, and the outcome.
+            Button("Apply") {
+                applyPlan = BrewPackageManager.applyArgv(for: packages.markedRows)
             }
-        }
-    }
-
-    // MARK: - Progress / streaming output
-
-    private var shouldShowProgressArea: Bool {
-        packages.state == .applying || packages.recentApplyOutcome != nil
-    }
-
-    @ViewBuilder
-    private var progressArea: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                if packages.state == .applying {
-                    ProgressView()
-                        .progressViewStyle(.linear)
-                        .frame(maxWidth: .infinity)
-                } else if let outcome = packages.recentApplyOutcome {
-                    outcomeIndicator(for: outcome)
-                }
-            }
-
-            DisclosureGroup(isExpanded: $detailsShown) {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(packages.applyLog.isEmpty ? "(no output yet)" : packages.applyLog)
-                                .font(.system(.caption, design: .monospaced))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(6)
-                            // Tail anchor: scrolling to it follows the
-                            // newest output as the log streams in.
-                            Color.clear
-                                .frame(height: 1)
-                                .id(logTailAnchor)
-                        }
-                    }
-                    .frame(height: 180)
-                    .background(Color(NSColor.textBackgroundColor))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.secondary.opacity(0.3))
-                    )
-                    .onChange(of: packages.applyLog) { _, _ in
-                        proxy.scrollTo(logTailAnchor, anchor: .bottom)
-                    }
-                    .onChange(of: detailsShown) { _, shown in
-                        if shown { proxy.scrollTo(logTailAnchor, anchor: .bottom) }
-                    }
-                }
-            } label: {
-                Text(detailsShown ? "Hide details" : "Show details")
-                    .font(.caption)
-            }
-        }
-        .padding(12)
-    }
-
-    @ViewBuilder
-    private func outcomeIndicator(for outcome: BrewPackageManager.ApplyOutcome) -> some View {
-        switch outcome {
-        case .success:
-            Label("Pipeline complete.", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-        case .failed(let code):
-            Label("brew exited \(code).", systemImage: "xmark.circle.fill")
-                .foregroundStyle(.red)
-        case .cancelled:
-            Label("Pipeline canceled.", systemImage: "stop.circle.fill")
-                .foregroundStyle(.orange)
-        case .spawnFailed(let reason):
-            Label("Could not start brew: \(reason)", systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.red)
+            .keyboardShortcut(.defaultAction)
+            .disabled(!buttons.applyEnabled || isChecking)
         }
     }
 
@@ -559,155 +476,6 @@ struct BrewPackageManagerView: View {
         )
     }
 
-    // MARK: - Password modal
-
-    private func submitPassword() {
-        let value = passwordInput
-        passwordInput = ""
-        askpass.respond(password: value,
-                        cache: rememberPassword ? cacheDuration : nil)
-    }
-
-    private func cancelPassword() {
-        passwordInput = ""
-        askpass.respondCancel()
-    }
-
-    @ViewBuilder
-    private var passwordModal: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Administrator password required")
-                .font(.headline)
-            Text("brew is asking for an administrator password to finish the current sub-call. By default your password isn't stored — enable Remember to keep it in memory for the chosen duration.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if askpass.lastValidationFailed {
-                Text("That password was incorrect. Try again.")
-                    .font(.callout)
-                    .foregroundStyle(.red)
-            }
-
-            SecureField("Password", text: $passwordInput)
-                .textFieldStyle(.roundedBorder)
-                .onSubmit { submitPassword() }
-                .disabled(askpass.isValidating)
-
-            Toggle("Remember password", isOn: $rememberPassword)
-                .disabled(askpass.isValidating)
-            if rememberPassword {
-                Picker("For", selection: $cacheDuration) {
-                    ForEach(AskpassService.CacheDuration.allCases) { duration in
-                        Text(duration.label).tag(duration)
-                    }
-                }
-                .pickerStyle(.menu)
-                .disabled(askpass.isValidating)
-            }
-
-            HStack {
-                if askpass.isValidating {
-                    ProgressView().controlSize(.small)
-                    Text("Validating…").font(.callout).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button("Cancel", role: .cancel) { cancelPassword() }
-                    .disabled(askpass.isValidating)
-                Button("Continue") { submitPassword() }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(passwordInput.isEmpty || askpass.isValidating)
-            }
-        }
-        .padding(20)
-        .frame(width: 380)
-    }
-}
-
-// MARK: - Window chrome modifier
-
-/// Wraps the close-while-applying confirmation, the autoremove
-/// confirmation, the askpass sheet, and the close-attempt
-/// `CloseInterceptor` into a single `ViewModifier` so the main view
-/// body stays inside the SwiftUI type-checker's tractability budget.
-private struct WindowChromeModifier: ViewModifier {
-    let packages: BrewPackageManager
-    let askpass: AskpassService
-    let dismissWindow: DismissWindowAction
-    @Binding var closeWarning: BrewPackageManagerView.CloseReason?
-    let passwordModal: AnyView
-
-    init(packages: BrewPackageManager,
-         askpass: AskpassService,
-         dismissWindow: DismissWindowAction,
-         closeWarning: Binding<BrewPackageManagerView.CloseReason?>,
-         passwordModal: some View) {
-        self.packages = packages
-        self.askpass = askpass
-        self.dismissWindow = dismissWindow
-        self._closeWarning = closeWarning
-        self.passwordModal = AnyView(passwordModal)
-    }
-
-    func body(content: Content) -> some View {
-        content
-            .background(CloseInterceptor(
-                shouldWarn: { packages.state == .applying },
-                onAttemptedClose: { closeWarning = .closeWindow }
-            ))
-            .confirmationDialog(
-                "Cancel pipeline in progress?",
-                isPresented: Binding(
-                    get: { closeWarning != nil },
-                    set: { if !$0 { closeWarning = nil } }
-                ),
-                titleVisibility: .visible,
-                presenting: closeWarning
-            ) { reason in
-                Button("Keep Running", role: .cancel) { closeWarning = nil }
-                Button("Cancel and Close Anyway", role: .destructive) {
-                    packages.cancelApply()
-                    askpass.respondCancel()
-                    closeWarning = nil
-                    switch reason {
-                    case .closeWindow:
-                        dismissWindow(id: "brew-package-manager")
-                    case .quitApp:
-                        NSApp.reply(toApplicationShouldTerminate: true)
-                    }
-                }
-            } message: { _ in
-                Text("Stopping mid-pipeline is equivalent to pressing Ctrl-C during a brew sub-call. Packages currently being installed or removed may be left in a partial or broken state, and your Homebrew installation may need manual repair.")
-            }
-            .confirmationDialog(
-                "Run brew autoremove?",
-                isPresented: Binding(
-                    get: { packages.pendingAutoremoveConfirmation },
-                    set: { if !$0 { packages.confirmAutoremove(false) } }
-                ),
-                titleVisibility: .visible
-            ) {
-                Button("Yes, autoremove unused dependencies") {
-                    packages.confirmAutoremove(true)
-                }
-                .keyboardShortcut(.defaultAction)
-                Button("No, leave them in place", role: .cancel) {
-                    packages.confirmAutoremove(false)
-                }
-            } message: {
-                Text("The uninstall step succeeded. Some of the formulae it depended on may now be unused. brew autoremove will sweep them up.")
-            }
-            .sheet(item: Binding(
-                get: { askpass.pendingRequest },
-                set: { new in
-                    if new == nil, askpass.pendingRequest != nil {
-                        askpass.respondCancel()
-                    }
-                }
-            )) { _ in
-                passwordModal
-            }
-    }
 }
 
 // MARK: - Sidebar / status filter labels
@@ -721,60 +489,4 @@ extension BrewPackageManager.StatusFilter {
         case .pinned:       return "pinned"
         }
     }
-}
-
-// MARK: - Close interception
-
-/// NSWindowDelegate bridge that routes the window's close gestures
-/// (red button, Cmd+W) through a warning when a gate predicate is
-/// true. Re-evaluated on every close attempt.
-private struct CloseInterceptor: NSViewRepresentable {
-    var shouldWarn: () -> Bool
-    var onAttemptedClose: () -> Void
-
-    final class Coordinator: NSObject, NSWindowDelegate {
-        var shouldWarn: () -> Bool
-        var onAttemptedClose: () -> Void
-        var underlyingDelegate: NSWindowDelegate?
-
-        init(shouldWarn: @escaping () -> Bool, onAttemptedClose: @escaping () -> Void) {
-            self.shouldWarn = shouldWarn
-            self.onAttemptedClose = onAttemptedClose
-        }
-
-        func windowShouldClose(_ sender: NSWindow) -> Bool {
-            if shouldWarn() {
-                onAttemptedClose()
-                return false
-            }
-            return underlyingDelegate?.windowShouldClose?(sender) ?? true
-        }
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(shouldWarn: shouldWarn, onAttemptedClose: onAttemptedClose)
-    }
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async {
-            guard let window = view.window else { return }
-            context.coordinator.underlyingDelegate = window.delegate
-            window.delegate = context.coordinator
-        }
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        context.coordinator.shouldWarn = shouldWarn
-        context.coordinator.onAttemptedClose = onAttemptedClose
-    }
-}
-
-extension Notification.Name {
-    /// Posted by `AppDelegate.applicationShouldTerminate` while an
-    /// Apply is in flight — prompts the Brew Package Manager window
-    /// to raise the quit warning dialog.
-    static let steadingAppQuitDuringApply =
-        Notification.Name("com.xalior.Steading.AppQuitDuringApply")
 }

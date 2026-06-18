@@ -27,9 +27,14 @@ struct SteadingApp: App {
                     ContentView()
                 }
             }
+            // Inner of the .environment calls so the presenter's
+            // @Environment(BrewPackageManager/AskpassService) resolve
+            // (environment flows outer → inner).
+            .brewApplyModal(for: BrewPackageManager.mainWindowID)
             .environment(appState)
             .environment(preferences)
             .environment(brewUpdates)
+            .environment(brewPackages)
             .environment(askpassService)
             .background(WindowBridge(appDelegate: appDelegate))
             .background(NotificationSurfaceController()
@@ -80,6 +85,7 @@ struct SteadingApp: App {
 
         Window("Brew Package Manager", id: "brew-package-manager") {
             BrewPackageManagerView()
+                .brewApplyModal(for: BrewPackageManager.packageManagerWindowID)
                 .environment(brewUpdates)
                 .environment(brewPackages)
                 .environment(askpassService)

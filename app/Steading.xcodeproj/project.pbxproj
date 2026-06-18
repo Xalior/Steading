@@ -13,7 +13,6 @@
 		0473162414D5D26E25A7411D /* BrewDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B0EE6A70B228F7CB0D472F /* BrewDetector.swift */; };
 		04F2AB90F73A9EA6FC4B9588 /* BuiltInServiceRunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */; };
 		051FB78D75D68C7C13D40855 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE58958345FEE2847E8E57AE /* WelcomeView.swift */; };
-		05E25F911F1816B833117753 /* TailscaleInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 593EA657EFEE30330B41B368 /* TailscaleInstaller.swift */; };
 		08FA41D5EA90086176A8F033 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C68F7A05734954EA423C2B6 /* AppDelegate.swift */; };
 		120451F5CC910B8D41FF66DE /* PrivilegedFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F837E9D77743E66B245E553 /* PrivilegedFileWriter.swift */; };
 		12992226202FAAB025C3C1EB /* PrivHelperApprovalsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EBAA2D4368DE78326EFA241 /* PrivHelperApprovalsTests.swift */; };
@@ -71,6 +70,7 @@
 		87BAB593C7F67EE8FCF2D782 /* PrivHelperRefusalList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3626F88188924DC3761E477B /* PrivHelperRefusalList.swift */; };
 		8D2B8921C4BAC6216D5FCBDF /* BrewPackageManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54B8036DEA6EE9477CF19521 /* BrewPackageManagerTests.swift */; };
 		8D5CF143A5C744BBDDD1B339 /* com.xalior.Steading.privhelper.plist in CopyFiles */ = {isa = PBXBuildFile; fileRef = A6E4C4D985048F9CF0B1285C /* com.xalior.Steading.privhelper.plist */; };
+		8E9E96ACA5C191BAFFA0E59A /* BrewApplyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7E96E907E961E9B0AA15B02 /* BrewApplyView.swift */; };
 		92B0F16F6C4B01A8EAB1C828 /* SteadingAskpassProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1197D1876ECB03BC47DBBFDF /* SteadingAskpassProtocol.swift */; };
 		931FE6204696DA4E9DCAD0A1 /* BrewStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8794DE1ECD29CC0BF8B94D3 /* BrewStatusBadge.swift */; };
 		93515F79B24EE2EC3E0C772B /* StreamingProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18E91170EE26FA46A90E86CF /* StreamingProcessRunner.swift */; };
@@ -217,7 +217,6 @@
 		518AD0434FFD8D998CAC5FB6 /* BuiltInServiceRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRunner.swift; sourceTree = "<group>"; };
 		53AB4FC964E30D3C8C05ED5B /* ApprovalsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApprovalsStore.swift; sourceTree = "<group>"; };
 		54B8036DEA6EE9477CF19521 /* BrewPackageManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewPackageManagerTests.swift; sourceTree = "<group>"; };
-		593EA657EFEE30330B41B368 /* TailscaleInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TailscaleInstaller.swift; sourceTree = "<group>"; };
 		5E8CFDDE4D1C0F539DB354FD /* BottomStatusStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomStatusStrip.swift; sourceTree = "<group>"; };
 		67122EEE7E798D244CDA0628 /* Steading.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Steading.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		67DBC3D77EA833B2C7D9E5BB /* BuiltInServiceRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInServiceRunnerTests.swift; sourceTree = "<group>"; };
@@ -284,6 +283,7 @@
 		EFA4E88AC5D08D8FA130E2DE /* OutdatedPackage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutdatedPackage.swift; sourceTree = "<group>"; };
 		F2DB46FC31752B14A6A9B387 /* CatalogDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogDetailView.swift; sourceTree = "<group>"; };
 		F33CA5F4724D899C9282921D /* ServiceDefinitionLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDefinitionLoader.swift; sourceTree = "<group>"; };
+		F7E96E907E961E9B0AA15B02 /* BrewApplyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewApplyView.swift; sourceTree = "<group>"; };
 		FACA65E91C31773D60EC864D /* BrewIndexParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrewIndexParserTests.swift; sourceTree = "<group>"; };
 		FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceCatalog.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -330,7 +330,6 @@
 				FC35825D1DA7731C04A3664F /* ServiceCatalog.swift */,
 				18E91170EE26FA46A90E86CF /* StreamingProcessRunner.swift */,
 				9043C2933647BD7888495D90 /* TailscaleDetector.swift */,
-				593EA657EFEE30330B41B368 /* TailscaleInstaller.swift */,
 				1607A01EF1A948C711D87CFC /* WebappCatalog.swift */,
 			);
 			path = Model;
@@ -396,6 +395,7 @@
 			isa = PBXGroup;
 			children = (
 				5E8CFDDE4D1C0F539DB354FD /* BottomStatusStrip.swift */,
+				F7E96E907E961E9B0AA15B02 /* BrewApplyView.swift */,
 				ACB0734C92D7E95118FAF952 /* BrewPackageManagerView.swift */,
 				B8794DE1ECD29CC0BF8B94D3 /* BrewStatusBadge.swift */,
 				0B1E7B0845CEB8241142969C /* BuiltInServiceDetailView.swift */,
@@ -728,6 +728,7 @@
 				F84EDC35803FF585F1DD257C /* AppState.swift in Sources */,
 				DC7C582B224F36B538A3E5BA /* AskpassService.swift in Sources */,
 				A8B54CD6DA0FB1EEE66FDA60 /* BottomStatusStrip.swift in Sources */,
+				8E9E96ACA5C191BAFFA0E59A /* BrewApplyView.swift in Sources */,
 				0473162414D5D26E25A7411D /* BrewDetector.swift in Sources */,
 				48D41E34561E341D89307FAB /* BrewIndexParser.swift in Sources */,
 				842E4F8BFFE312B808F4D588 /* BrewPackageManager.swift in Sources */,
@@ -772,7 +773,6 @@
 				93515F79B24EE2EC3E0C772B /* StreamingProcessRunner.swift in Sources */,
 				701D342E68299632114DE381 /* TailscaleDetailView.swift in Sources */,
 				D07614D9BB81DACBC527CB32 /* TailscaleDetector.swift in Sources */,
-				05E25F911F1816B833117753 /* TailscaleInstaller.swift in Sources */,
 				5C2F5F90DF0D64C93A1123B0 /* WebappCatalog.swift in Sources */,
 				051FB78D75D68C7C13D40855 /* WelcomeView.swift in Sources */,
 				28008068CDAF4D278A021256 /* WriteTarget.swift in Sources */,
